@@ -65,7 +65,7 @@ public class FFmpegCustom implements FFmpegInterfaceCustom {
 
             String[] command = (String[]) this.concatenate(ffmpegBinary, cmd);
 
-            this.ffmpegExecuteAsyncTask = new FFmpegExecuteAsyncTaskCustom(command, this.timeout, ffmpegExecuteResponseHandler, type);
+            this.ffmpegExecuteAsyncTask = new FFmpegExecuteAsyncTaskCustom(command, this.timeout, ffmpegExecuteResponseHandler, type, context);
             this.ffmpegExecuteAsyncTask.execute(new Void[0]);
         } else {
             throw new IllegalArgumentException("shell command cannot be empty");

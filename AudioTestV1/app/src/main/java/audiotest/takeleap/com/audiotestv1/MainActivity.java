@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p>
+     * <p/>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -72,14 +72,11 @@ public class MainActivity extends AppCompatActivity {
 
         verifyStoragePermissions(this);
 
-        File ffmpegFile = new File("/data/user/0/com.takeleap.audiotestv1/files/ffmpeg2");
+        File ffmpegFile = new File("/data/user/0/com.takeleap.audiotestv1/files/ffmpeg");
 
-        if(ffmpegFile.exists())
-        {
+        if (ffmpegFile.exists()) {
             Log.e("STREAM_AUDIO", "FFMPEG FILE EXITS " + ffmpegFile.canExecute());
-        }
-        else
-        {
+        } else {
             Log.e("STREAM_AUDIO", "FFMPEG FILE DOES NOT EXITS");
 
             AssetManager assetManager = this.getAssets();
@@ -93,17 +90,14 @@ public class MainActivity extends AppCompatActivity {
                 copyFile(in, out);
                 in.close();
                 out.close();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg2", e);
             }
         }
 
-        if(ffmpegFile.exists())
-        {
+        if (ffmpegFile.exists()) {
             Log.e("STREAM_AUDIO", "FFMPEG FILE EXITS");
-        }
-        else
-        {
+        } else {
             Log.e("STREAM_AUDIO", "FFMPEG FILE DOES NOT EXITS");
         }
 
@@ -125,27 +119,29 @@ public class MainActivity extends AppCompatActivity {
         String[] cmd = input.split(" ");
 
         try {
+
+
             audioFFMPEG.execute(cmd, new ExecuteBinaryResponseHandler() {
-                public void onStart() {
-                    Log.d("STREAM_AUDIO", "ON START");
-                }
+                        public void onStart() {
+                            Log.d("STREAM_AUDIO", "ON START");
+                        }
 
-                public void onProgress(String message) {
-                    Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
-                }
+                        public void onProgress(String message) {
+                            Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
+                        }
 
-                public void onFailure(String message) {
-                    Log.d("STREAM_AUDIO", "ON FAILURE " + message);
-                }
+                        public void onFailure(String message) {
+                            Log.d("STREAM_AUDIO", "ON FAILURE " + message);
+                        }
 
-                public void onSuccess(String message) {
-                    Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
-                }
+                        public void onSuccess(String message) {
+                            Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
+                        }
 
-                public void onFinish() {
-                    Log.d("STREAM_AUDIO", "ON FINISH ");
-                }
-            }, 1
+                        public void onFinish() {
+                            Log.d("STREAM_AUDIO", "ON FINISH ");
+                        }
+                    }, 1
             );
 
         } catch (FFmpegCommandAlreadyRunningException exception) {
@@ -168,36 +164,36 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("STREAM_AUDIO", "BEGIN");
 
-//        String input = "-y -i rtsp://13.126.154.86:5454/callerAudio.mp3 -f wav -";
-//        String[] cmd = input.split(" ");
-
-        try {
-            videoFFMPEG.execute(cmd, new ExecuteBinaryResponseHandler() {
-                        public void onStart() {
-                            Log.d("STREAM_AUDIO", "ON START");
-                        }
-
-                        public void onProgress(String message) {
-                            Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
-                        }
-
-                        public void onFailure(String message) {
-                            Log.d("STREAM_AUDIO", "ON FAILURE " + message);
-                        }
-
-                        public void onSuccess(String message) {
-                            Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
-                        }
-
-                        public void onFinish() {
-                            Log.d("STREAM_AUDIO", "ON FINISH ");
-                        }
-                    }, 2
-            );
-
-        } catch (FFmpegCommandAlreadyRunningException exception) {
-            Log.d("STREAM_AUDIO", exception.getMessage());
-        }
+//        input = "-y -i rtsp://13.126.154.86:5454/caller.mpeg4 -f image2pipe -vcodec mjpeg -";
+//        cmd = input.split(" ");
+//
+//        try {
+//            videoFFMPEG.execute(cmd, new ExecuteBinaryResponseHandler() {
+//                        public void onStart() {
+//                            Log.d("STREAM_AUDIO", "ON START");
+//                        }
+//
+//                        public void onProgress(String message) {
+//                            Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
+//                        }
+//
+//                        public void onFailure(String message) {
+//                            Log.d("STREAM_AUDIO", "ON FAILURE " + message);
+//                        }
+//
+//                        public void onSuccess(String message) {
+//                            Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
+//                        }
+//
+//                        public void onFinish() {
+//                            Log.d("STREAM_AUDIO", "ON FINISH ");
+//                        }
+//                    }, 2
+//            );
+//
+//        } catch (FFmpegCommandAlreadyRunningException exception) {
+//            Log.d("STREAM_AUDIO", exception.getMessage());
+//        }
     }
 
     @Override
