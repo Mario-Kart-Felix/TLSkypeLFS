@@ -56,7 +56,13 @@ class FileUtilsCustom {
     }
 
     static String getFFmpeg(Context context) {
+
         return getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg";
+    }
+
+    static String getFFmpeg2(Context context) {
+
+        return getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg2";
     }
 
     static String getFFmpeg(Context context, Map<String, String> environmentVars) {

@@ -22,6 +22,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import com.github.hiteshsondhi88.libffmpeg.ExecuteBinaryResponseHandler;
 import com.github.hiteshsondhi88.libffmpeg.LoadBinaryResponseHandler;
@@ -55,12 +57,55 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         verifyStoragePermissions(this);
+
+        File ffmpegFile = new File("/data/user/0/com.takeleap.audiotestv1/files/ffmpeg2");
+
+        if(ffmpegFile.exists())
+        {
+            Log.e("STREAM_AUDIO", "FFMPEG FILE EXITS " + ffmpegFile.canExecute());
+        }
+        else
+        {
+            Log.e("STREAM_AUDIO", "FFMPEG FILE DOES NOT EXITS");
+
+            AssetManager assetManager = this.getAssets();
+            InputStream in = null;
+            OutputStream out = null;
+            try {
+                in = assetManager.open("ffmpeg2");
+                ffmpegFile.createNewFile();
+                ffmpegFile.setExecutable(true);
+                out = new FileOutputStream(ffmpegFile);
+                copyFile(in, out);
+                in.close();
+                out.close();
+            } catch(IOException e) {
+                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg2", e);
+            }
+        }
+
+        if(ffmpegFile.exists())
+        {
+            Log.e("STREAM_AUDIO", "FFMPEG FILE EXITS");
+        }
+        else
+        {
+            Log.e("STREAM_AUDIO", "FFMPEG FILE DOES NOT EXITS");
+        }
 
         FFmpegCustom audioFFMPEG = FFmpegCustom.getInstance(this.getApplicationContext()); //new FFmpegCustom(this.getApplicationContext());
         try {

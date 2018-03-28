@@ -1,5 +1,6 @@
 package audiotest.takeleap.com.audiotestv1;
 
+import android.content.res.AssetManager;
 import android.os.AsyncTask;
 
 import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler;
@@ -102,6 +103,7 @@ public class FFmpegExecuteAsyncTaskCustom extends AsyncTask<Void, String, Comman
 
                 CommandResultCustom var2;
         try {
+
             this.process = this.shellCommand.run(this.cmd);
 
             FetchThreadClass fetchThread = new FetchThreadClass(this.process);

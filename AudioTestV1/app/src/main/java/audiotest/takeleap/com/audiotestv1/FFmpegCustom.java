@@ -1,6 +1,8 @@
 package audiotest.takeleap.com.audiotestv1;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.text.TextUtils;
 import android.util.*;
 
@@ -8,6 +10,7 @@ import com.github.hiteshsondhi88.libffmpeg.*;
 import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegCommandAlreadyRunningException;
 import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Map;
 
@@ -73,6 +76,7 @@ public class FFmpegCustom implements FFmpegInterfaceCustom {
             Log.d("STREAM_AUDIO", FileUtilsCustom.getFFmpeg(this.context, environvenmentVars));
 
             String[] command = (String[])this.concatenate(ffmpegBinary, cmd);
+
             this.ffmpegExecuteAsyncTask = new FFmpegExecuteAsyncTaskCustom(command, this.timeout, ffmpegExecuteResponseHandler);
             this.ffmpegExecuteAsyncTask.execute(new Void[0]);
         } else {
