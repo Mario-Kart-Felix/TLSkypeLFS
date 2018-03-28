@@ -57,15 +57,21 @@ class FileUtilsCustom {
 
     static String getFFmpeg(Context context) {
 
+        File file = new File(getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg");
+        file.setExecutable(true);
+
         return getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg";
     }
 
     static String getFFmpeg2(Context context) {
 
+        File file = new File(getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg2");
+        file.setExecutable(true);
+
         return getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg2";
     }
 
-    static String getFFmpeg(Context context, Map<String, String> environmentVars) {
+    static String getFFmpeg(Context context, Map<String, String> environmentVars, int type) {
         String ffmpegCommand = "";
         Map.Entry var;
         if(environmentVars != null) {
@@ -74,7 +80,7 @@ class FileUtilsCustom {
             }
         }
 
-        ffmpegCommand = ffmpegCommand + getFFmpeg(context);
+        ffmpegCommand = ffmpegCommand + (type == 1 ? getFFmpeg(context) : getFFmpeg2(context));
         return ffmpegCommand;
     }
 

@@ -107,17 +107,17 @@ public class MainActivity extends AppCompatActivity {
             Log.e("STREAM_AUDIO", "FFMPEG FILE DOES NOT EXITS");
         }
 
-        FFmpegCustom audioFFMPEG = FFmpegCustom.getInstance(this.getApplicationContext()); //new FFmpegCustom(this.getApplicationContext());
-        try {
-            audioFFMPEG.loadBinary(new LoadBinaryResponseHandler() {
-                public void onStart() {
-                }
-
-                public void onFinish() {
-                }
-            });
-        } catch (Exception e) {
-        }
+        FFmpegCustom audioFFMPEG = new FFmpegCustom(this.getApplicationContext()); //new FFmpegCustom(this.getApplicationContext());
+//        try {
+//            audioFFMPEG.loadBinary(new LoadBinaryResponseHandler() {
+//                public void onStart() {
+//                }
+//
+//                public void onFinish() {
+//                }
+//            });
+//        } catch (Exception e) {
+//        }
 
         Log.d("STREAM_AUDIO", "BEGIN");
 
@@ -145,7 +145,8 @@ public class MainActivity extends AppCompatActivity {
                 public void onFinish() {
                     Log.d("STREAM_AUDIO", "ON FINISH ");
                 }
-            }            );
+            }, 1
+            );
 
         } catch (FFmpegCommandAlreadyRunningException exception) {
             Log.d("STREAM_AUDIO", exception.getMessage());
@@ -153,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("STREAM_AUDIO", "MIDDLE");
 
-//        FFmpegCustom videoFFMPEG = new FFmpegCustom(this.getApplicationContext());
+        FFmpegCustom videoFFMPEG = new FFmpegCustom(this.getApplicationContext()); //new FFmpegCustom(this.getApplicationContext());
 //        try {
 //            videoFFMPEG.loadBinary(new LoadBinaryResponseHandler() {
 //                public void onStart() {
@@ -165,37 +166,38 @@ public class MainActivity extends AppCompatActivity {
 //        } catch (Exception e) {
 //        }
 
-//        input = "-y -i rtsp://13.126.154.86:5454/caller.mpeg4 -f image2pipe -vcodec mjpeg -";
-//        cmd = input.split(" ");
-//
-//        try {
-//            videoFFMPEG.execute(cmd, new ExecuteBinaryResponseHandler() {
-//                        public void onStart() {
-//                            Log.d("STREAM_AUDIO", "ON START");
-//                        }
-//
-//                        public void onProgress(String message) {
-//                            Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
-//                        }
-//
-//                        public void onFailure(String message) {
-//                            Log.d("STREAM_AUDIO", "ON FAILURE " + message);
-//                        }
-//
-//                        public void onSuccess(String message) {
-//                            Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
-//                        }
-//
-//                        public void onFinish() {
-//                            Log.d("STREAM_AUDIO", "ON FINISH ");
-//                        }
-//                    }
-//                    , "VIDEO FETCH"
-//            );
-//
-//        } catch (FFmpegCommandAlreadyRunningException exception) {
-//            Log.d("STREAM_AUDIO", exception.getMessage());
-//        }
+        Log.d("STREAM_AUDIO", "BEGIN");
+
+//        String input = "-y -i rtsp://13.126.154.86:5454/callerAudio.mp3 -f wav -";
+//        String[] cmd = input.split(" ");
+
+        try {
+            videoFFMPEG.execute(cmd, new ExecuteBinaryResponseHandler() {
+                        public void onStart() {
+                            Log.d("STREAM_AUDIO", "ON START");
+                        }
+
+                        public void onProgress(String message) {
+                            Log.d("STREAM_AUDIO", "ON PROGRESS " + message);
+                        }
+
+                        public void onFailure(String message) {
+                            Log.d("STREAM_AUDIO", "ON FAILURE " + message);
+                        }
+
+                        public void onSuccess(String message) {
+                            Log.d("STREAM_AUDIO", "ON SUCCESS " + message);
+                        }
+
+                        public void onFinish() {
+                            Log.d("STREAM_AUDIO", "ON FINISH ");
+                        }
+                    }, 2
+            );
+
+        } catch (FFmpegCommandAlreadyRunningException exception) {
+            Log.d("STREAM_AUDIO", exception.getMessage());
+        }
     }
 
     @Override

@@ -32,9 +32,13 @@ public class FFmpegExecuteAsyncTaskCustom extends AsyncTask<Void, String, Comman
         Process targetProcess;
         InputStream  inputStream;
 
-        FetchThreadClass(Process targetProcess) {
+        String outputAdd = "";
+
+        FetchThreadClass(Process targetProcess, String outputAdd) {
             this.targetProcess = targetProcess;
             inputStream = this.targetProcess.getInputStream();
+
+            this.outputAdd = outputAdd;
 
             playSoundExternal = PlaySoundExternal.instance();
             playSoundExternal.InitSound();
@@ -59,7 +63,7 @@ public class FFmpegExecuteAsyncTaskCustom extends AsyncTask<Void, String, Comman
 
                   //  playSoundExternal.SendData(buffer, numRead);
 
-                    Log.d("STREAM_AUDIO", "Audio Output " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
+                    Log.d("STREAM_AUDIO", "Audio Output "  + outputAdd + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -74,20 +78,28 @@ public class FFmpegExecuteAsyncTaskCustom extends AsyncTask<Void, String, Comman
         }
     }
 
-    private final String[] cmd;
-    private final FFmpegExecuteResponseHandler ffmpegExecuteResponseHandler;
-    private final ShellCommandCustom shellCommand;
-    private final long timeout;
+    private  String[] cmd;
+    private  FFmpegExecuteResponseHandler ffmpegExecuteResponseHandler;
+    private  ShellCommandCustom shellCommand;
+    private  long timeout;
     private long startTime;
     private Process process;
     private String output = "";
+    private String outputAdd = "";
 
 
-    FFmpegExecuteAsyncTaskCustom(String[] cmd, long timeout, FFmpegExecuteResponseHandler ffmpegExecuteResponseHandler) {
+    FFmpegExecuteAsyncTaskCustom(String[] cmd, long timeout, FFmpegExecuteResponseHandler ffmpegExecuteResponseHandler, int type) {
         this.cmd = cmd;
         this.timeout = timeout;
         this.ffmpegExecuteResponseHandler = ffmpegExecuteResponseHandler;
         this.shellCommand = new ShellCommandCustom();
+
+        outputAdd = "FIRST";
+
+        if(type == 2)
+        {
+            outputAdd = "SECOND";
+        }
     }
 
     protected void onPreExecute() {
@@ -106,7 +118,7 @@ public class FFmpegExecuteAsyncTaskCustom extends AsyncTask<Void, String, Comman
 
             this.process = this.shellCommand.run(this.cmd);
 
-            FetchThreadClass fetchThread = new FetchThreadClass(this.process);
+            FetchThreadClass fetchThread = new FetchThreadClass(this.process, outputAdd);
             fetchThread.run();
 
             if(this.process != null) {

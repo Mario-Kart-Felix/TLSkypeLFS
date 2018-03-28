@@ -14,9 +14,9 @@ import java.util.Map;
 interface FFmpegInterfaceCustom {
     void loadBinary(FFmpegLoadBinaryResponseHandler var1) throws FFmpegNotSupportedException;
 
-    void execute(Map<String, String> var1, String[] var2, FFmpegExecuteResponseHandler var3) throws FFmpegCommandAlreadyRunningException;
+    void execute(Map<String, String> var1, String[] var2, FFmpegExecuteResponseHandler var3, int type) throws FFmpegCommandAlreadyRunningException;
 
-    void execute(String[] var1, FFmpegExecuteResponseHandler var2) throws FFmpegCommandAlreadyRunningException;
+    void execute(String[] var1, FFmpegExecuteResponseHandler var2, int type) throws FFmpegCommandAlreadyRunningException;
 
     String getDeviceFFmpegVersion() throws FFmpegCommandAlreadyRunningException;
 
