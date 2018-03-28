@@ -39,11 +39,11 @@ public class PlaySoundExternal {
 
     public void InitSound()
     {
-        int outputBufferSize = AudioTrack.getMinBufferSize(41000,
+        int outputBufferSize = AudioTrack.getMinBufferSize(44100,
                 AudioFormat.CHANNEL_IN_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT);
 
-        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 41000, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, outputBufferSize, AudioTrack.MODE_STREAM);
+        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, outputBufferSize, AudioTrack.MODE_STREAM);
 
         audioTrack.play();
 

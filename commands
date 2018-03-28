@@ -14,3 +14,7 @@ ffplay -fflags nobuffer -flags low_delay -framedrop -strict experimental http://
 
 -y -re -rtbufsize 1024M -i c:\out.mp4 -an -f rtp rtp://13.126.154.86:5454/feed1.ffm
 
+-y -i rtsp://13.126.154.86:5454/caller.mpeg4 -f image2pipe -vcodec mjpeg -
+
+
+compile(name: 'FFmpegAndroid-0.3.2', ext: 'aar')
