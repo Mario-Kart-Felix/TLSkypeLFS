@@ -4,6 +4,8 @@ using UnityEngine;
 using System.Threading;
 using System.IO;
 using System;
+using System.Runtime.InteropServices;
+
 
 public class TestAndroidPlugin : MonoBehaviour
 {
@@ -25,6 +27,8 @@ public class TestAndroidPlugin : MonoBehaviour
     private byte[] buffer;	
 	private	int bufferSize = 5000;
 
+    public  AndroidJavaObject inputStream;
+
     void Start()
     {
         audioPlayThread = new Thread(new ThreadStart(AudioPlayUpdate));
@@ -37,6 +41,30 @@ public class TestAndroidPlugin : MonoBehaviour
         {
             androidJavaClass = new AndroidJavaClass("audiotest.takeleap.com.playsound.PlaySoundExternal");
             innerInstance = androidJavaClass.CallStatic<AndroidJavaObject>("instance");
+
+            byte[] nums = innerInstance.Call<byte[]>("TestPluginArrayNonStatic");
+
+            print(nums.Length);
+
+            for(int i = 0; i < nums.Length; i++)
+            {
+                print(nums[i]);
+            }
+
+
+            AndroidJavaClass  unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+
+            inputStream = innerInstance.Call<AndroidJavaObject>("GetInputStream", unityClass.GetStatic<AndroidJavaObject>("currentActivity"));
+
+            nums = new byte[200];
+
+            IntPtr numPtr = AndroidJNI.ToByteArray(nums);
+
+            int numRead = inputStream.Call<int>("read", numPtr, 0, 200);
+
+            nums = AndroidJNI.FromByteArray(numPtr);
+
+            print("NUM READ " + numRead + " " + nums[22] + " " + nums[87]);
 
             innerInstance.Call("InitSound");
 
