@@ -24,26 +24,4 @@ class ShellCommandCustom {
         return process;
     }
 
-    CommandResultCustom runWaitFor(String[] s) {
-        Process process = this.run(s);
-        Integer exitValue = null;
-        String output = null;
-
-        try {
-            if(process != null) {
-                exitValue = Integer.valueOf(process.waitFor());
-                if(CommandResultCustom.success(exitValue)) {
-                    output = UtilCustom.convertInputStreamToString(process.getInputStream());
-                } else {
-                    output = UtilCustom.convertInputStreamToString(process.getErrorStream());
-                }
-            }
-        } catch (InterruptedException var9) {
-            Log.d("STREAM_AUDIO", "Interrupt exception", var9);
-        } finally {
-            UtilCustom.destroyProcess(process);
-        }
-
-        return new CommandResultCustom(CommandResultCustom.success(exitValue), output);
-    }
 }

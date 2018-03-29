@@ -71,7 +71,7 @@ class FileUtilsCustom {
         return getFilesDirectory(context).getAbsolutePath() + File.separator + "ffmpeg2";
     }
 
-    static String getFFmpeg(Context context, Map<String, String> environmentVars, int type) {
+    static String getFFmpeg(Context context, Map<String, String> environmentVars) {
         String ffmpegCommand = "";
         Map.Entry var;
         if(environmentVars != null) {
@@ -80,7 +80,7 @@ class FileUtilsCustom {
             }
         }
 
-        ffmpegCommand = ffmpegCommand + (type == 1 ? getFFmpeg(context) : getFFmpeg2(context));
+        ffmpegCommand = ffmpegCommand + getFFmpeg(context);
         return ffmpegCommand;
     }
 
