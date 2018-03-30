@@ -2,9 +2,15 @@ package audiotest.takeleap.com.audiotestv1;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -36,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.INTERNET,
     };
 
-    File ffmpegFile = new File( getFilesDir() + File.separator + "ffmpeg");
+//    File ffmpegFile = new File( getFilesDir() + File.separator + "ffmpeg");
 
 
     /**
@@ -78,117 +84,157 @@ public class MainActivity extends AppCompatActivity {
         return b & 0xFF;
     }
 
+    public CameraDevice cameraDevice;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         verifyStoragePermissions(this);
+
+        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
+        try {
+            String[] cameraIDList = cameraManager.getCameraIdList();
+
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraIDList[0]);
+
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+
+                cameraManager.openCamera(cameraIDList[0], stateCallback, null);
+
+
+                return;
+            }
+
+
+            Log.d("STREAM_AUDIO", cameraIDList.length + " " + cameraIDList[0] + cameraIDList[1]);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    public void RunProcess(int caller)
-    {
-        if(ffmpegFile.exists())
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
+    CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice camera) {
+            cameraDevice=camera;
+//            startCamera();
         }
-        else
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
-
-            AssetManager assetManager = this.getAssets();
-            InputStream in = null;
-            OutputStream out = null;
-            try
-            {
-                in = assetManager.open("ffmpeg");
-                ffmpegFile.createNewFile();
-                ffmpegFile.setExecutable(true);
-                out = new FileOutputStream(ffmpegFile);
-                copyFile(in, out);
-                in.close();
-                out.close();
-            }
-            catch (IOException e)
-            {
-                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
-            }
+        @Override
+        public void onDisconnected(CameraDevice camera) {
         }
-
-        if(!ffmpegFile.exists())
-        {
-            return;
+        @Override
+        public void onError(CameraDevice camera, int error) {
         }
+    };
 
-        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
-
-        String input = "-y -i rtsp://13.126.154.86:5454/" + (caller == 1 ? "callerAudio.mp3" : "callerAudio.mp3") + " -f wav -";
-        String[] cmds = input.split(" ");
-        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(this.getApplicationContext(), null)};
-        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        final Process audioProcess = shellCommandCustom.run(command);
-
-        new Thread(new Runnable() {
-            public void run() {
-                int numBytesPerRead = 5000;
-                byte[] buffer = new byte[numBytesPerRead];
-
-                InputStream inputStream = audioProcess.getInputStream();
-
-                while (true) {
-                    try {
-
-                        int numRead = inputStream.read(buffer);
-
-                        Log.d("STREAM_AUDIO", "Audio Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-
-        input = "-y -i rtsp://13.126.154.86:5454/"  + (caller == 1 ? "caller.mp4" : "caller.mp4") + " -f image2pipe -vcodec mjpeg -";
-        cmds = input.split(" ");
-        command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        final Process videoProcess = shellCommandCustom.run(command);
-
-        new Thread(new Runnable() {
-            public void run() {
-                int numBytesPerRead = 5000;
-                byte[] buffer = new byte[numBytesPerRead];
-
-                InputStream inputStream = videoProcess.getInputStream();
-
-                while (true) {
-                    try {
-
-                        int numRead = inputStream.read(buffer);
-
-                        Log.d("STREAM_AUDIO", "Video Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
+//    public void RunProcess(int caller)
+//    {
+//        if(ffmpegFile.exists())
+//        {
+//            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
+//        }
+//        else
+//        {
+//            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
+//
+//            AssetManager assetManager = this.getAssets();
+//            InputStream in = null;
+//            OutputStream out = null;
+//            try
+//            {
+//                in = assetManager.open("ffmpeg");
+//                ffmpegFile.createNewFile();
+//                ffmpegFile.setExecutable(true);
+//                out = new FileOutputStream(ffmpegFile);
+//                copyFile(in, out);
+//                in.close();
+//                out.close();
+//            }
+//            catch (IOException e)
+//            {
+//                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
+//            }
+//        }
+//
+//        if(!ffmpegFile.exists())
+//        {
+//            return;
+//        }
+//
+//        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
+//
+//        String input = "-y -i rtsp://13.126.154.86:5454/" + (caller == 1 ? "callerAudio.mp3" : "callerAudio.mp3") + " -f wav -";
+//        String[] cmds = input.split(" ");
+//        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(this.getApplicationContext(), null)};
+//        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
+//
+//        final Process audioProcess = shellCommandCustom.run(command);
+//
+//        new Thread(new Runnable() {
+//            public void run() {
+//                int numBytesPerRead = 5000;
+//                byte[] buffer = new byte[numBytesPerRead];
+//
+//                InputStream inputStream = audioProcess.getInputStream();
+//
+//                while (true) {
+//                    try {
+//
+//                        int numRead = inputStream.read(buffer);
+//
+//                        Log.d("STREAM_AUDIO", "Audio Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
+//
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    try {
+//                        Thread.sleep(1);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
+//
+//        input = "-y -i rtsp://13.126.154.86:5454/"  + (caller == 1 ? "caller.mp4" : "caller.mp4") + " -f image2pipe -vcodec mjpeg -";
+//        cmds = input.split(" ");
+//        command = (String[]) this.concatenate(ffmpegBinary, cmds);
+//
+//        final Process videoProcess = shellCommandCustom.run(command);
+//
+//        new Thread(new Runnable() {
+//            public void run() {
+//                int numBytesPerRead = 5000;
+//                byte[] buffer = new byte[numBytesPerRead];
+//
+//                InputStream inputStream = videoProcess.getInputStream();
+//
+//                while (true) {
+//                    try {
+//
+//                        int numRead = inputStream.read(buffer);
+//
+//                        Log.d("STREAM_AUDIO", "Video Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
+//
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    try {
+//                        Thread.sleep(1);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
+//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
