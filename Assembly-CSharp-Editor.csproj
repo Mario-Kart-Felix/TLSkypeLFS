@@ -55,6 +55,12 @@
      <Compile Include="Assets\FFmpeg\Editor\MacPostBuild.cs" />
      <Compile Include="Assets\FFmpeg\Editor\WinPostBuild.cs" />
      <Compile Include="Assets\FFmpegOut\Editor\CameraCaptureEditor.cs" />
+ <Reference Include="Vuforia.UnityExtensions.Editor">
+ <HintPath>C:/Program Files/Unity 2017.3.1f1/Editor/Data/PlaybackEngines/VuforiaSupport/Managed/Editor/Vuforia.UnityExtensions.Editor.dll</HintPath>
+ </Reference>
+ <Reference Include="Vuforia.UnityExtensions">
+ <HintPath>C:/Program Files/Unity 2017.3.1f1/Editor/Data/PlaybackEngines/VuforiaSupport/Managed/Runtime/Vuforia.UnityExtensions.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity 2017.3.1f1/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>

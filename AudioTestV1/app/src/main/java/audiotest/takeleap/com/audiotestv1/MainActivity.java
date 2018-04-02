@@ -1,253 +1,268 @@
 package audiotest.takeleap.com.audiotestv1;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
+import android.media.Image;
+import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.Size;
+import android.util.SparseIntArray;
+import android.view.Surface;
+import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
 
-import java.io.DataInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "STREAM_AUDIO";
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final int REQUEST_CAMERA_PERMISSION = 200;
 
-    // Storage Permissions
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static String[] PERMISSIONS_STORAGE = {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.INTERNET,
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
+    protected CameraDevice cameraDevice;
+    protected CameraCaptureSession cameraCaptureSessions;
+    protected CaptureRequest.Builder captureRequestBuilder;
+    private TextureView textureView;
+    private String cameraId;
+    private Size imageDimension;
+    TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            //open your camera here
+            openCamera();
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+            // Transform you image captured size according to the surface width and height
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+            return false;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        }
     };
 
-//    File ffmpegFile = new File( getFilesDir() + File.separator + "ffmpeg");
+    private ImageReader imageReader;
+    private Handler mBackgroundHandler;
+    private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice camera) {
+            //This is called when the camera is open
+            Log.e(TAG, "onOpened");
+            cameraDevice = camera;
+            createCameraPreview();
 
+            new Thread(new Runnable() {
+                public void run() {
 
-    /**
-     * Checks if the app has permission to write to device storage
-     * <p/>
-     * If the app does not has permission then the user will be prompted to grant permissions
-     *
-     * @param activity
-     */
-    public static void verifyStoragePermissions(Activity activity) {
-        // Check if we have write permission
+                    while (true) {
 
-        // We don't have permission so prompt the user
-        ActivityCompat.requestPermissions(
-                activity,
-                PERMISSIONS_STORAGE,
-                REQUEST_EXTERNAL_STORAGE
-        );
-    }
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        textureView.getBitmap().compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+                        byte[] byteArray = byteArrayOutputStream.toByteArray();
 
-    public String[] concatenate(String[] a, String[] b) {
-        int aLen = a.length;
-        int bLen = b.length;
-        String[] c = ((String[]) Array.newInstance(a.getClass().getComponentType(), aLen + bLen));
-        System.arraycopy(a, 0, c, 0, aLen);
-        System.arraycopy(b, 0, c, aLen, bLen);
-        return c;
-    }
+                        Log.d(TAG, "Video Output " + byteArray.length);
 
-    private void copyFile(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[1024];
-        int read;
-        while ((read = in.read(buffer)) != -1) {
-            out.write(buffer, 0, read);
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
         }
-    }
 
-    public int unsignedToBytes(byte b) {
-        return b & 0xFF;
-    }
+        @Override
+        public void onDisconnected(CameraDevice camera) {
+            cameraDevice.close();
+        }
 
-    public CameraDevice cameraDevice;
+        @Override
+        public void onError(CameraDevice camera, int error) {
+            cameraDevice.close();
+            cameraDevice = null;
+        }
+    };
+
+    private HandlerThread mBackgroundThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        textureView = (TextureView) findViewById(R.id.textureView);
+//        textureView = new TextureView(this.getApplicationContext());
 
-        verifyStoragePermissions(this);
+        assert textureView != null;
+        textureView.setSurfaceTextureListener(textureListener);
+    }
 
-        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+    protected void startBackgroundThread() {
+        mBackgroundThread = new HandlerThread("Camera Background");
+        mBackgroundThread.start();
+        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+    }
 
+    protected void stopBackgroundThread() {
+        mBackgroundThread.quitSafely();
         try {
-            String[] cameraIDList = cameraManager.getCameraIdList();
+            mBackgroundThread.join();
+            mBackgroundThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
-            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraIDList[0]);
+    protected void createCameraPreview() {
+        try {
+            SurfaceTexture texture = textureView.getSurfaceTexture();
+            assert texture != null;
+            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            Surface surface = new Surface(texture);
+            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            captureRequestBuilder.addTarget(surface);
+            cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                    //The camera is already closed
+                    if (null == cameraDevice) {
+                        return;
+                    }
+                    // When the session is ready, we start displaying the preview.
+                    cameraCaptureSessions = cameraCaptureSession;
+                    updatePreview();
+                }
 
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-
-                cameraManager.openCamera(cameraIDList[0], stateCallback, null);
-
-
-                return;
-            }
-
-
-            Log.d("STREAM_AUDIO", cameraIDList.length + " " + cameraIDList[0] + cameraIDList[1]);
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+//                    Toast.makeText(AndroidCameraApi.this, "Configuration change", Toast.LENGTH_SHORT).show();
+                }
+            }, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
     }
 
-    CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(CameraDevice camera) {
-            cameraDevice=camera;
-//            startCamera();
+    private void openCamera() {
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        Log.e(TAG, "is camera open");
+        try {
+            cameraId = manager.getCameraIdList()[0];
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            assert map != null;
+            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+            // Add permission for camera and let user grant the permission
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+                return;
+            }
+            manager.openCamera(cameraId, stateCallback, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
-        @Override
-        public void onDisconnected(CameraDevice camera) {
-        }
-        @Override
-        public void onError(CameraDevice camera, int error) {
-        }
-    };
+        Log.e(TAG, "openCamera X");
+    }
 
-//    public void RunProcess(int caller)
-//    {
-//        if(ffmpegFile.exists())
-//        {
-//            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
-//        }
-//        else
-//        {
-//            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
-//
-//            AssetManager assetManager = this.getAssets();
-//            InputStream in = null;
-//            OutputStream out = null;
-//            try
-//            {
-//                in = assetManager.open("ffmpeg");
-//                ffmpegFile.createNewFile();
-//                ffmpegFile.setExecutable(true);
-//                out = new FileOutputStream(ffmpegFile);
-//                copyFile(in, out);
-//                in.close();
-//                out.close();
-//            }
-//            catch (IOException e)
-//            {
-//                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
-//            }
-//        }
-//
-//        if(!ffmpegFile.exists())
-//        {
-//            return;
-//        }
-//
-//        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
-//
-//        String input = "-y -i rtsp://13.126.154.86:5454/" + (caller == 1 ? "callerAudio.mp3" : "callerAudio.mp3") + " -f wav -";
-//        String[] cmds = input.split(" ");
-//        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(this.getApplicationContext(), null)};
-//        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-//
-//        final Process audioProcess = shellCommandCustom.run(command);
-//
-//        new Thread(new Runnable() {
-//            public void run() {
-//                int numBytesPerRead = 5000;
-//                byte[] buffer = new byte[numBytesPerRead];
-//
-//                InputStream inputStream = audioProcess.getInputStream();
-//
-//                while (true) {
-//                    try {
-//
-//                        int numRead = inputStream.read(buffer);
-//
-//                        Log.d("STREAM_AUDIO", "Audio Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
-//
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    try {
-//                        Thread.sleep(1);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
-//
-//        input = "-y -i rtsp://13.126.154.86:5454/"  + (caller == 1 ? "caller.mp4" : "caller.mp4") + " -f image2pipe -vcodec mjpeg -";
-//        cmds = input.split(" ");
-//        command = (String[]) this.concatenate(ffmpegBinary, cmds);
-//
-//        final Process videoProcess = shellCommandCustom.run(command);
-//
-//        new Thread(new Runnable() {
-//            public void run() {
-//                int numBytesPerRead = 5000;
-//                byte[] buffer = new byte[numBytesPerRead];
-//
-//                InputStream inputStream = videoProcess.getInputStream();
-//
-//                while (true) {
-//                    try {
-//
-//                        int numRead = inputStream.read(buffer);
-//
-//                        Log.d("STREAM_AUDIO", "Video Output " + " " + unsignedToBytes(buffer[0]) + " " + unsignedToBytes(buffer[1]) + " " + numRead);
-//
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    try {
-//                        Thread.sleep(1);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
-//    }
+    protected void updatePreview() {
+        if (null == cameraDevice) {
+            Log.e(TAG, "updatePreview error, return");
+        }
+
+        Log.d(TAG, "updatePreview");
+
+        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        try {
+            cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void closeCamera() {
+        if (null != cameraDevice) {
+            cameraDevice.close();
+            cameraDevice = null;
+        }
+        if (null != imageReader) {
+            imageReader.close();
+            imageReader = null;
+        }
+    }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Log.d("STREAM_AUDIO", "Permission: " + permissions[0] + " was " + grantResults[0] + "  " + ActivityCompat.checkSelfPermission(this, permissions[0]));
-
-            //Log.d("STREAM_AUDIO", "is read " + wavFile.canRead());
-
-//                    audioFetchThread = new Thread(AudioFetcher);
-//                    audioFetchThread.start();
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                // close the app
+//                Toast.makeText(AndroidCameraApi.this, "Sorry!!!, you can't use this app without granting permission", Toast.LENGTH_LONG).show();
+                finish();
+            }
         }
     }
-}
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.e(TAG, "onResume");
+        startBackgroundThread();
+        if (textureView.isAvailable()) {
+            openCamera();
+        } else {
+            textureView.setSurfaceTextureListener(textureListener);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        Log.e(TAG, "onPause");
+        //closeCamera();
+        stopBackgroundThread();
+        super.onPause();
+    }
+}
