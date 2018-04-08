@@ -7,13 +7,18 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
@@ -254,5 +259,67 @@ public class PlaySoundExternal {
     {
         audioTrack.stop();
         audioTrack.release();
+    }
+
+    public void RunProcessSend(int caller, Context context)
+    {
+        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
+
+        if(ffmpegFile.exists())
+        {
+            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
+        }
+        else
+        {
+            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
+
+            AssetManager assetManager = context.getAssets();
+            InputStream in = null;
+            OutputStream out = null;
+            try
+            {
+                in = assetManager.open("ffmpeg");
+                ffmpegFile.createNewFile();
+                ffmpegFile.setExecutable(true);
+                out = new FileOutputStream(ffmpegFile);
+                copyFile(in, out);
+                in.close();
+                out.close();
+            }
+            catch (IOException e)
+            {
+                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
+            }
+        }
+
+        if(!ffmpegFile.exists())
+        {
+            return;
+        }
+
+        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
+
+        String input = "-y -re -rtbufsize 100M -f dv1394 -i /dev/dv1394/0 http://13.126.154.86:8090/feed1.ffm";
+
+//        input = "-devices";
+        String[] cmds = input.split(" ");
+        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
+        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
+
+        final Process sendProcess = shellCommandCustom.run(command);
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    String line;
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(sendProcess.getErrorStream()));
+                    while ((line = reader.readLine()) != null) {
+                        Log.d("STREAM_AUDIO", line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }

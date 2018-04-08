@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Parcel;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -45,6 +46,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import audiotest.takeleap.com.playsound.PlaySoundExternal;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "STREAM_AUDIO";
@@ -110,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
 
                        Log.d(TAG, "Video Output " + byteArray.length);
 
-
                         try {
                             Thread.sleep(1);
                         } catch (InterruptedException e) {
@@ -139,18 +141,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        textureView = (TextureView) findViewById(R.id.textureView);
+        textureView = (TextureView) findViewById(R.id.textureView);
 
-        textureView = new TextureView(this.getApplicationContext());
-        textureView.setLeft(465);   textureView.setRight(1032);
-        textureView.setTop(48);   textureView.setBottom(1644);
-        SurfaceTexture mSurface = new SurfaceTexture(0);
-        mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
-        textureView.setSurfaceTexture(mSurface);
+//        textureView = new TextureView(this.getApplicationContext());
+//        textureView.setLeft(465);   textureView.setRight(1032);
+//        textureView.setTop(48);   textureView.setBottom(1644);
+//        SurfaceTexture mSurface = new SurfaceTexture(0);
+//        mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
+//        textureView.setSurfaceTexture(mSurface);
+//        textureView.setSurfaceTextureListener(textureListener);
 
-        Log.d(TAG, "OH NO " + textureView.getWidth()  + " " +  textureView.getRight() + " " + textureView.getLeft() + " " + textureView.getTop() + " " + textureView.getBottom());
+        imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1);
 
-        textureView.setSurfaceTextureListener(textureListener);
+//        Log.d(TAG, "OH NO " + textureView.getWidth()  + " " +  textureView.getRight() + " " + textureView.getLeft() + " " + textureView.getTop() + " " + textureView.getBottom());
+
+//        PlaySoundExternal playSoundExternal = new PlaySoundExternal();
+//        playSoundExternal.RunProcessSend( 0, this.getApplicationContext());
     }
 
     protected void startBackgroundThread() {
@@ -178,10 +184,17 @@ public class MainActivity extends AppCompatActivity {
             texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
 
             Surface surface = new Surface(texture);
+            List surfaces = new ArrayList<>();
+            surfaces.add(surface);
 
-            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             captureRequestBuilder.addTarget(surface);
-            cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+
+            Surface readerSurface = imageReader.getSurface();
+            surfaces.add(readerSurface);
+            captureRequestBuilder.addTarget(readerSurface);
+
+            cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                     //The camera is already closed
@@ -198,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "onConfigureFailed");
 //                    Toast.makeText(AndroidCameraApi.this, "Configuration change", Toast.LENGTH_SHORT).show();
                 }
-            }, null);
+            }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -216,8 +229,42 @@ public class MainActivity extends AppCompatActivity {
 
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            assert map != null;
-            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+            imageDimension = map.getOutputSizes(ImageReader.class)[0];
+            imageReader = ImageReader.newInstance(  imageDimension.getWidth(),
+                                                    imageDimension.getHeight(),
+                                                    ImageFormat.YUV_420_888, 30);
+
+            Parcel ourParcel = Parcel.obtain();
+            imageReader.getSurface().writeToParcel(ourParcel, 0);
+
+
+            ImageReader.OnImageAvailableListener mImageAvailable = new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader)
+                {
+                    Image image = reader.acquireLatestImage();
+                    if (image == null)
+                        return;
+
+
+//                    // RowStride of planes may differ from width set to image reader, depends
+//                    // on device and camera hardware, for example on Nexus 6P the rowStride is
+//                    // 384 and the image width is 352.
+                    final Image.Plane[] planes = image.getPlanes();
+                    ByteBuffer byteBuffer = planes[0].getBuffer();
+                    Log.d(TAG, "Image Available " + byteBuffer.get(400));
+
+//                    final int total = planes[0].getRowStride() * mHeight;
+//                    if (mRgbBuffer == null || mRgbBuffer.length < total)
+//                        mRgbBuffer = new int[total];
+//
+//                    getRGBIntFromPlanes(planes);
+
+                    image.close();
+                }
+            };
+
+//            imageReader.setOnImageAvailableListener(mImageAvailable, mBackgroundHandler);
 
             Log.e(TAG, "Image Dimension " + imageDimension.getWidth() + " " + imageDimension.getHeight());
 
@@ -287,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.e(TAG, "onPause");
         //closeCamera();
-        stopBackgroundThread();
+//        stopBackgroundThread();
         super.onPause();
     }
 }

@@ -17,4 +17,14 @@ ffplay -fflags nobuffer -flags low_delay -framedrop -strict experimental http://
 -y -i rtsp://13.126.154.86:5454/caller.mpeg4 -f image2pipe -vcodec mjpeg -
 
 
-compile(name: 'FFmpegAndroid-0.3.2', ext: 'aar')
+-y -re -rtbufsize 100M -f dshow -i video="Camera 0" http://13.126.154.86:8090/feed1.ffm -vcodec libx264 -pix_fmt yuv420p
+
+
+14:04:48.259 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  D. = Demuxing supported
+04-07 14:04:48.259 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  .E = Muxing supported
+04-07 14:04:48.259 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  --
+04-07 14:04:48.260 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  D  dv1394          DV1394 A/V grab
+04-07 14:04:48.260 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  DE fbdev           Linux framebuffer
+04-07 14:04:48.260 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  D  lavfi           Libavfilter virtual input device
+04-07 14:04:48.260 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:   E v4l2            Video4Linux2 output device
+04-07 14:04:48.260 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  D  video4linux2,v4l2 Video4Linux2 device grab
