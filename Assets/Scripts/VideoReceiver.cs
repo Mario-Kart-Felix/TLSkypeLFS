@@ -35,7 +35,91 @@ public class VideoReceiver : MonoBehaviour
 
         ffmpegPath = FFmpegConfig.BinaryPath;
 
-        ReceiveStream();
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            AndroidPluginStart();
+        }
+        else
+        {
+            ReceiveStream();
+        }
+    }
+
+    unsafe void AndroidPluginStart()
+    {
+        streamReceiver = new StreamReceiver(null, receiverImage, textureSize, false);
+        streamReceiver.StartReceivingStream();
+
+        return;
+
+        string strName = "audiotest/takeleap/com/playsound/PlaySoundExternal";
+        IntPtr localRefPtr = AndroidJNI.FindClass(strName);
+
+        IntPtr unityClassPtr = AndroidJNI.FindClass("com/unity3d/player/UnityPlayer");
+        IntPtr inputStreamClassPtr = AndroidJNI.FindClass("java/io/InputStream");
+
+        if (localRefPtr != IntPtr.Zero)
+        {
+            print("NOT NULL");
+
+            IntPtr instancePtr = AndroidJNI.CallStaticObjectMethod(localRefPtr, AndroidJNI.GetStaticMethodID(localRefPtr, "instance",
+                                                                    "()Laudiotest/takeleap/com/playsound/PlaySoundExternal;"), new jvalue[] { });
+
+            if (instancePtr != null)
+            {
+                print("Instance PTR NOT NULL BRO");
+            }
+            else
+            {
+                print("Instance PTR NULL BRO");
+            }
+
+            IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginArrayNonStatic",
+                                                                    "()[B"),
+                                                                    new jvalue[] { });
+
+            byte[] num = new byte[100];
+
+            Marshal.Copy(inputStreamPtr, num, 0, 100);
+
+            print(num[22] + " " + num[73]);
+
+            // print(AndroidJNI.CallIntMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginNonStatic",
+            //                                                         "()I"), new jvalue[] { }));
+
+            // IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClassPtr, AndroidJNI.GetStaticFieldID(unityClassPtr, "currentActivity", "Landroid/app/Activity;"));
+
+            // print("Current Activity " + currentActivityPtr == null);
+
+            // IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "GetInputStream",
+            //                                                         "(Landroid/content/Context;)Ljava/io/InputStream;"),
+            //                                                         AndroidJNIHelper.CreateJNIArgArray(new object[] { unityClass.GetStatic<AndroidJavaObject>("currentActivity") }));
+
+            // if (inputStreamPtr != null)
+            // {
+            //     print("INPUT STREAM NOT NULL");
+
+            //     byte[] buffer = new byte[300];
+
+            //     IntPtr unmanagedPointer = Marshal.AllocHGlobal(buffer.Length);
+
+            //     jvalue[] args = AndroidJNIHelper.CreateJNIArgArray(new object[] { buffer });
+
+            //     int numRead = AndroidJNI.CallIntMethod(inputStreamPtr, AndroidJNI.GetMethodID(inputStreamClassPtr, "read", "([B)I"), args);
+
+            //     print(numRead + " " +  Marshal.ReadByte(unmanagedPointer, 12) + " " + Marshal.ReadByte(unmanagedPointer, 55));
+            // }
+            // else
+            // {
+            //     print("INPUT STREAM IS NULL");
+            // }
+
+            // print("END");
+        }
+        // else
+        // {
+        //     print("IS NULL");
+        // }
     }
 
     void ReceiveStream()
@@ -48,8 +132,6 @@ public class VideoReceiver : MonoBehaviour
         string opt = "-y -i rtsp://13.126.154.86:5454/" + (SkypeManager.Instance.isCaller ? "caller.mpeg4" : "caller.mpeg4") + " -f image2pipe -vcodec mjpeg -";
 
         // string opt = "-nostdin -y -i http://13.126.154.86:8090/callerAudio.mp3 -f s16le -acodec pcm_s16le -";
-
-        print(opt);
 
         ProcessStartInfo info = new ProcessStartInfo(ffmpegPath, opt);
 

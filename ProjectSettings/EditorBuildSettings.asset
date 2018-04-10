@@ -5,10 +5,10 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/skypetest.unity
     guid: 92548e60b27cb2242b216732e7a5a66c
-  - enabled: 1
+  - enabled: 0
     path: Assets/FFmpeg/FFmpegDemo/FFmpegDemo.unity
     guid: 042171e577ff27c4aaa1dd2bf0a05748
   - enabled: 0

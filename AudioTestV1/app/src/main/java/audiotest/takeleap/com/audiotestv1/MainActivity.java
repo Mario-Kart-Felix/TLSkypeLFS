@@ -51,15 +51,7 @@ import audiotest.takeleap.com.playsound.PlaySoundExternal;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "STREAM_AUDIO";
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 200;
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
 
     protected CameraDevice cameraDevice;
     protected CameraCaptureSession cameraCaptureSessions;
@@ -67,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private String cameraId;
     private Size imageDimension;
+
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -111,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                         textureView.getBitmap().compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
                         byte[] byteArray = byteArrayOutputStream.toByteArray();
 
-                       Log.d(TAG, "Video Output " + byteArray.length);
+//                       Log.d(TAG, "Video Output " + byteArray.length);
 
                         try {
                             Thread.sleep(1);
@@ -124,7 +117,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onDisconnected(CameraDevice camera) {
+        public void onDisconnected(CameraDevice camera)
+        {
             cameraDevice.close();
         }
 
@@ -138,18 +132,27 @@ public class MainActivity extends AppCompatActivity {
     private HandlerThread mBackgroundThread;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        textureView = (TextureView) findViewById(R.id.textureView);
 
-//        textureView = new TextureView(this.getApplicationContext());
-//        textureView.setLeft(465);   textureView.setRight(1032);
-//        textureView.setTop(48);   textureView.setBottom(1644);
-//        SurfaceTexture mSurface = new SurfaceTexture(0);
-//        mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
-//        textureView.setSurfaceTexture(mSurface);
-//        textureView.setSurfaceTextureListener(textureListener);
+        PlaySoundExternal playSoundExternal = new PlaySoundExternal();
+        playSoundExternal.RunProcess(0, getApplicationContext());
+
+        //CameraOpen();
+    }
+
+    public  void CameraOpen()
+    {
+    //        textureView = (TextureView) findViewById(R.id.textureView);
+        textureView = new TextureView(this.getApplicationContext());
+        textureView.setLeft(465);   textureView.setRight(1032);
+        textureView.setTop(48);   textureView.setBottom(1644);
+        SurfaceTexture mSurface = new SurfaceTexture(0);
+        mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
+        textureView.setSurfaceTexture(mSurface);
+        textureView.setSurfaceTextureListener(textureListener);
 
         imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1);
 
@@ -219,7 +222,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void openCamera() {
 
-
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG, "openCamera");
         try {
@@ -233,10 +235,6 @@ public class MainActivity extends AppCompatActivity {
             imageReader = ImageReader.newInstance(  imageDimension.getWidth(),
                                                     imageDimension.getHeight(),
                                                     ImageFormat.YUV_420_888, 30);
-
-            Parcel ourParcel = Parcel.obtain();
-            imageReader.getSurface().writeToParcel(ourParcel, 0);
-
 
             ImageReader.OnImageAvailableListener mImageAvailable = new ImageReader.OnImageAvailableListener() {
                 @Override
@@ -264,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
-//            imageReader.setOnImageAvailableListener(mImageAvailable, mBackgroundHandler);
+            imageReader.setOnImageAvailableListener(mImageAvailable, mBackgroundHandler);
 
             Log.e(TAG, "Image Dimension " + imageDimension.getWidth() + " " + imageDimension.getHeight());
 
@@ -318,23 +316,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.e(TAG, "onResume");
-        startBackgroundThread();
-        if (textureView.isAvailable()) {
-            openCamera();
-        } else {
-            textureView.setSurfaceTextureListener(textureListener);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        Log.e(TAG, "onPause");
-        //closeCamera();
-//        stopBackgroundThread();
-        super.onPause();
-    }
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+////        Log.e(TAG, "onResume");
+////        startBackgroundThread();
+////        if (textureView.isAvailable()) {
+////            openCamera();
+////        } else {
+////            textureView.setSurfaceTextureListener(textureListener);
+////        }
+//    }
+//
+//    @Override
+//    protected void onPause() {
+//        Log.e(TAG, "onPause");
+////        closeCamera();
+////        stopBackgroundThread();
+//        super.onPause();
+//    }
 }

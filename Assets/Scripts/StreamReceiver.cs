@@ -9,6 +9,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections;
 using UnityEngine.Video;
 using UnityEngine.Profiling;
 using UnityEngine;
@@ -29,22 +30,41 @@ public class StreamReceiver
     private Texture2D targetTexture;
     Thread renderThread;
 
+    bool directRead = false;
+
     private StreamReader streamReader;
 
     [DllImport("msvcrt.dll", SetLastError = true, CharSet = CharSet.Auto)]
     public static extern int memcmp(byte[] b1, byte[] b2, long count);
 
+    AndroidJavaClass unityClass;
+    AndroidJavaClass pluginClass;
+    AndroidJavaObject pluginObject;
 
 
-    public StreamReceiver(StreamReader stream, RawImage targetImage, Vector2 textureSize)
+    public StreamReceiver(StreamReader stream, RawImage targetImage, Vector2 textureSize, bool directRead = true)
     {
-        this.streamReader = stream;
-        this.stdout = new BinaryReader(stream.BaseStream);
         this.targetImage = targetImage;
+        this.directRead = directRead;
 
         targetTexture = new Texture2D((int)textureSize.x, (int)textureSize.y, TextureFormat.RGB24, false);
 
         newData = new byte[numDataPerRead];
+
+        if (!directRead)
+        {
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                pluginClass = new AndroidJavaClass("audiotest.takeleap.com.playsound.PlaySoundExternal");
+                pluginObject = pluginClass.CallStatic<AndroidJavaObject>("instance");
+            }
+        }
+        else
+        {
+            this.streamReader = stream;
+            this.stdout = new BinaryReader(stream.BaseStream);
+        }
     }
 
     public void StartReceivingStream()
@@ -61,20 +81,50 @@ public class StreamReceiver
 
     public void ThreadUpdate()
     {
-        // Profiler.BeginThreadProfiling("TLSKYPE_THREADS", "Sender Thread");
+        if (!directRead)
+        {
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                AndroidJNI.AttachCurrentThread();
+
+                pluginObject.Call(
+                    "RunProcess",
+                    0,
+                    unityClass.GetStatic<AndroidJavaObject>("currentActivity"));
+            }
+        }
 
         while (true)
         {
             int bytesRead = numDataPerRead;
 
-            // newData = stdout.ReadBytes(numDataPerRead); 
-            bytesRead = stdout.Read(newData, 0, numDataPerRead);
+            if (directRead)
+            {
+                bytesRead = stdout.Read(newData, 0, numDataPerRead);
+            }
+            else
+            {
+                bytesRead = pluginObject.Call<int>("GetVideoNumReadLast");
 
-            // bytesRead = streamReader.Read(newData, 0, numDataPerRead);
+                Debug.Log(bytesRead);
 
-            int index = SearchBytePattern();
+                if(bytesRead > 0)
+                {
+                    newData = pluginObject.Call<byte[]>("GetVideoBuffer");
+                }
+                else
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+            }
 
-            // Debug.Log(index);
+            int index = 0;
+            
+            if(Application.platform == RuntimePlatform.Android)
+               index = SearchBytePatternAndroid();
+            else
+               index = SearchBytePattern();
 
             if (index != -1)
             {
@@ -95,8 +145,6 @@ public class StreamReceiver
                 count += bytesRead;
             }
         }
-
-        // Profiler.EndThreadProfiling();
     }
 
     public int SearchBytePattern()
@@ -114,6 +162,30 @@ public class StreamReceiver
                 byte[] match = new byte[patternLength];
                 Buffer.BlockCopy(newData, i, match, 0, patternLength);
                 if (memcmp(pattern, match, patternLength) == 0)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    public int SearchBytePatternAndroid()
+    {
+        int patternLength = pattern.Length;
+        int totalLength = newData.Length;
+        byte firstMatchByte = pattern[0];
+
+        // Debug.Log(newData[0] + " " + newData[1]);
+
+        for (int i = 0; i < totalLength; i++)
+        {
+            if (firstMatchByte == newData[i] && totalLength - i >= patternLength)
+            {
+                byte[] match = new byte[patternLength];
+                Buffer.BlockCopy(newData, i, match, 0, patternLength);
+                if (StructuralComparisons.StructuralEqualityComparer.Equals(match, pattern))
                 {
                     return i;
                 }

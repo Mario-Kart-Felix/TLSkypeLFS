@@ -130,7 +130,6 @@ public class TestAndroidPlugin : MonoBehaviour
             //     print(nums[i]);
             // }
 
-
             AndroidJavaClass unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 
             inputStream = innerInstance.Call<AndroidJavaObject>("GetInputStream", unityClass.GetStatic<AndroidJavaObject>("currentActivity"));

@@ -42,16 +42,17 @@ public class SkypeManager : MonoBehaviour
         mainCanvas.SetActive(false);
         buttonCanvas.SetActive(true);
 
-        networkView = GetComponent<NetworkView>();
-        Network.Connect("13.126.154.86", 7777);
+        if(Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
+        {
+            networkView = GetComponent<NetworkView>();
+            Network.Connect("13.126.154.86", 7777);
 
-        StopCoroutine("FileUploader");
-        StartCoroutine("FileUploader");
+            StopCoroutine("FileUploader");
+            StartCoroutine("FileUploader");
 
-		if(!Directory.Exists(Application.dataPath + "/ReceivedFiles"))
-			Directory.CreateDirectory(Application.dataPath + "/ReceivedFiles");
-
-		// print(Application.dataPath);
+            if(!Directory.Exists(Application.dataPath + "/ReceivedFiles"))
+                Directory.CreateDirectory(Application.dataPath + "/ReceivedFiles");
+        }
     }
 
     public void DownloadReceivedFile()
@@ -138,7 +139,11 @@ public class SkypeManager : MonoBehaviour
         mainCanvas.SetActive(true);
 
         videoReceiver.StartReceiveStream();
-        videoSender.StartVideoSender();
+
+        if(Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
+        {
+            videoSender.StartVideoSender();
+        }
     }
 
     public void SendFile(string fullFileName)

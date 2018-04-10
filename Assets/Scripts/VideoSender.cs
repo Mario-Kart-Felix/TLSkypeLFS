@@ -63,6 +63,9 @@ public class VideoSender : MonoBehaviour
                  + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm")
                  + " -f image2pipe -vcodec mjpeg -";
 
+        // string opt = "-y -rtbufsize 2048M -f dshow -video_size 1920x1080 -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\"" 
+        //          + " -an -f image2pipe -vcodec mjpeg -";
+
     //     string opt = "-y -f dshow -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0] + "\""
     //    + " -f image2pipe -vcodec mjpeg -";
 
@@ -87,8 +90,6 @@ public class VideoSender : MonoBehaviour
 
         streamReceiver = new StreamReceiver(senderProcess.StandardOutput, senderImage, textureSize);
         streamReceiver.StartReceivingStream();
-
-      
     }
 
     void ErrorDataReceived(object sender, DataReceivedEventArgs e)
