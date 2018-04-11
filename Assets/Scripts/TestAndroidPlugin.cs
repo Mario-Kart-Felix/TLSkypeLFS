@@ -58,11 +58,11 @@ public class TestAndroidPlugin : MonoBehaviour
                 print(AndroidJNI.CallIntMethod(instancePtr, AndroidJNI.GetMethodID(localRef, "TestPluginNonStatic",
                                                                         "()I"), new jvalue[] { }));
 
-                IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClass, AndroidJNI.GetStaticFieldID(unityClass, "currentActivity", "Landroid/app/Activity;"));
+                // IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClass, AndroidJNI.GetStaticFieldID(unityClass, "currentActivity", "Landroid/app/Activity;"));
 
-                IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRef, "GetInputStream",
-                                                                        "(Landroid/content/Context;)Ljava/io/InputStream;"),
-                                                                        AndroidJNIHelper.CreateJNIArgArray(new object[] { currentActivityPtr }));
+                // IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRef, "GetInputStream",
+                //                                                         "(Landroid/content/Context;)Ljava/io/InputStream;"),
+                //                                                         AndroidJNIHelper.CreateJNIArgArray(new object[] { currentActivityPtr }));
 
                 // if (inputStreamPtr != null)
                 // {
@@ -91,14 +91,14 @@ public class TestAndroidPlugin : MonoBehaviour
 
     void AndroidPluginStart()
     {
-        AndroidJavaClass unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-        AndroidJavaClass pluginClass = new AndroidJavaClass("audiotest.takeleap.com.playsound.PlaySoundExternal");
-        AndroidJavaObject pluginObject = pluginClass.CallStatic<AndroidJavaObject>("instance");
+        // AndroidJavaClass unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        // AndroidJavaClass pluginClass = new AndroidJavaClass("audiotest.takeleap.com.playsound.PlaySoundExternal");
+        // AndroidJavaObject pluginObject = pluginClass.CallStatic<AndroidJavaObject>("instance");
 
-        pluginObject.Call(
-            "RunProcess",
-            1,
-            unityClass.GetStatic<AndroidJavaObject>("currentActivity"));
+        // pluginObject.Call(
+        //     "RunProcess",
+        //     1,
+        //     unityClass.GetStatic<AndroidJavaObject>("currentActivity"));
     }
 
     void Start()

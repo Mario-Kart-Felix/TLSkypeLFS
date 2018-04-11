@@ -6,6 +6,7 @@ using System.Net;
 using System.IO;
 using UnityEngine.UI;
 using System.Text;
+using System.Threading;
 
 public class SkypeManager : MonoBehaviour
 {
@@ -26,10 +27,12 @@ public class SkypeManager : MonoBehaviour
     public List<string> filestoSend = new List<string>();
 
     public GameObject receivedFilesObject;
-	public	Text  receivedFileNameText;
+    public Text receivedFileNameText;
     private string receivedFileName;
     private string receivedFileFullName;
-	public	Text	downloadedNotificationText;
+    public Text downloadedNotificationText;
+
+    public string receivedfilesDirPath = "";
 
     void Awake()
     {
@@ -42,38 +45,81 @@ public class SkypeManager : MonoBehaviour
         mainCanvas.SetActive(false);
         buttonCanvas.SetActive(true);
 
-        if(Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
+        networkView = GetComponent<NetworkView>();
+        Network.Connect("13.126.154.86", 7777);
+
+        StopCoroutine("FileUploader");
+        StartCoroutine("FileUploader");
+
+        if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
         {
-            networkView = GetComponent<NetworkView>();
-            Network.Connect("13.126.154.86", 7777);
-
-            StopCoroutine("FileUploader");
-            StartCoroutine("FileUploader");
-
-            if(!Directory.Exists(Application.dataPath + "/ReceivedFiles"))
-                Directory.CreateDirectory(Application.dataPath + "/ReceivedFiles");
+            receivedfilesDirPath = Application.dataPath + "/ReceivedFiles";
         }
+        else if (Application.platform == RuntimePlatform.Android)
+        {
+            receivedfilesDirPath = "/mnt/sdcard/ReceivedFiles";
+        }
+
+        if (!Directory.Exists(receivedfilesDirPath))
+            Directory.CreateDirectory(receivedfilesDirPath);
     }
 
     public void DownloadReceivedFile()
     {
-		receivedFilesObject.SetActive(false);
+        Thread fileDownloadThread = new Thread(FileDownloadThreadFunction);
+        fileDownloadThread.Start();
+    }
+
+    void HideDownloadedNotificationText()
+    {
+        downloadedNotificationText.gameObject.SetActive(false);
+    }
+
+    void FileUploadThreadFunction()
+    {
+        string myFilePath = filestoSend[0];
+        string[] splitNames = myFilePath.Split(new char[] { '\\' });
+        string serverPath = "ftp://185.27.134.11/htdocs/Unity test/" + splitNames[splitNames.Length - 1];
+
+        filestoSend.RemoveAt(0);
+
+        FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverPath);
+        request.Method = WebRequestMethods.Ftp.UploadFile;
+
+        request.Credentials = new NetworkCredential("b31_21594044", "Password");
+        StreamReader sourceStream = new StreamReader(myFilePath);
+        // print(Application.persistentDataPath + "/" + myFilePath + " ftp location file");
+
+        BinaryReader binaryReader = new BinaryReader(sourceStream.BaseStream);
+        int length = (int)sourceStream.BaseStream.Length;
+
+        byte[] datas = binaryReader.ReadBytes(length);
+        print(datas.Length);
+
+        sourceStream.Close();
+
+        Stream requestStream = request.GetRequestStream();
+        requestStream.Write(datas, 0, datas.Length);
+        requestStream.Close();
+
+        SendFile(serverPath);
+    }
+
+    void FileDownloadThreadFunction()
+    {
+        receivedFilesObject.SetActive(false);
 
         WebClient client = new WebClient();
         client.Credentials = new NetworkCredential("b31_21594044", "Password");
-        client.DownloadFile(receivedFileFullName, Application.dataPath + "/" + "ReceivedFiles" + "/" + receivedFileName);
-	
-		downloadedNotificationText.gameObject.SetActive(true);
-		downloadedNotificationText.text = "Downloaded File " + receivedFileName;
 
-		CancelInvoke("HideDownloadedNotificationText");
-		Invoke("HideDownloadedNotificationText", 5f);
-	}
+        client.DownloadFile(receivedFileFullName, receivedfilesDirPath + "/" + receivedFileName);
 
-	void HideDownloadedNotificationText()
-	{
-		downloadedNotificationText.gameObject.SetActive(false);
-	}
+        downloadedNotificationText.gameObject.SetActive(true);
+        downloadedNotificationText.text = "Downloaded File " + receivedFileName;
+
+        CancelInvoke("HideDownloadedNotificationText");
+        Invoke("HideDownloadedNotificationText", 5f);
+    }
 
     IEnumerator FileUploader()
     {
@@ -81,32 +127,8 @@ public class SkypeManager : MonoBehaviour
         {
             if (filestoSend.Count > 0)
             {
-                string myFilePath = filestoSend[0];
-                string[] splitNames = myFilePath.Split(new char[] { '\\' });
-                string serverPath = "ftp://185.27.134.11/htdocs/Unity test/" + splitNames[splitNames.Length - 1];
-
-                filestoSend.RemoveAt(0);
-
-                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverPath);
-                request.Method = WebRequestMethods.Ftp.UploadFile;
-
-                request.Credentials = new NetworkCredential("b31_21594044", "Password");
-                StreamReader sourceStream = new StreamReader(myFilePath);
-                // print(Application.persistentDataPath + "/" + myFilePath + " ftp location file");
-
-                BinaryReader binaryReader = new BinaryReader(sourceStream.BaseStream);
-                int length = (int)sourceStream.BaseStream.Length;
-
-                byte[] datas = binaryReader.ReadBytes(length);
-                print(datas.Length);
-
-                sourceStream.Close();
-
-                Stream requestStream = request.GetRequestStream();
-                requestStream.Write(datas, 0, datas.Length);
-                requestStream.Close();
-
-                SendFile(serverPath);
+                Thread fileUploadThread = new Thread(FileUploadThreadFunction);
+                fileUploadThread.Start();
             }
 
             yield return new WaitForSeconds(0.1f);
@@ -118,12 +140,12 @@ public class SkypeManager : MonoBehaviour
     {
         print("GOT FILE " + fullFileName);
 
-		receivedFilesObject.SetActive(true);
+        receivedFilesObject.SetActive(true);
 
-		receivedFileFullName = fullFileName;
+        receivedFileFullName = fullFileName;
         string[] splitNames = fullFileName.Split(new char[] { '/' });
-		receivedFileName = splitNames[splitNames.Length - 1];
-		receivedFileNameText.text = receivedFileName;
+        receivedFileName = splitNames[splitNames.Length - 1];
+        receivedFileNameText.text = receivedFileName;
     }
 
     void OnDestroy()
@@ -140,7 +162,7 @@ public class SkypeManager : MonoBehaviour
 
         videoReceiver.StartReceiveStream();
 
-        if(Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
+        if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
         {
             videoSender.StartVideoSender();
         }

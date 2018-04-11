@@ -51,32 +51,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegHelpers\FFmpegCommands.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegHelpers\FFmpegConfigs.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegHelpers\FFmpegHandler.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegHelpers\FFmpegParser.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegHelpers\FFmpegProgressParser.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegUtils\UnityThread.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegCode\FFmpegWrapper.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemo.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoHelpers\Console.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoHelpers\DefaultFieldInitializer.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoHelpers\IOSDemoHelpers\IOSInputView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoHelpers\IOSDemoHelpers\IOSOutputView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoHelpers\IOSDemoHelpers\IOSVideoPicker.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\AddSoundView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\AppendView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\CompressView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\ConvertView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\DecodeView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\EncodeView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\ProgressView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\TrimView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegDemoView\WatermarkView.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegREC.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegRECHelpers\RecDemoBall.cs" />
-     <Compile Include="Assets\FFmpeg\FFmpegDemo\FFmpegRECView\RECView.cs" />
-     <Compile Include="Assets\FFmpeg\Standalone\StandaloneProxy.cs" />
      <Compile Include="Assets\FFmpegOut\CameraCapture.cs" />
      <Compile Include="Assets\FFmpegOut\FFmpegConfig.cs" />
      <Compile Include="Assets\FFmpegOut\FFmpegPipe.cs" />

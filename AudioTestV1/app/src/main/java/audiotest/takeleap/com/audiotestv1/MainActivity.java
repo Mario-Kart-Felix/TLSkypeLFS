@@ -131,13 +131,15 @@ public class MainActivity extends AppCompatActivity {
 
     private HandlerThread mBackgroundThread;
 
+    private PlaySoundExternal playSoundExternal;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        PlaySoundExternal playSoundExternal = new PlaySoundExternal();
+        playSoundExternal = new PlaySoundExternal();
         playSoundExternal.RunProcess(0, getApplicationContext());
 
         //CameraOpen();
@@ -335,4 +337,11 @@ public class MainActivity extends AppCompatActivity {
 ////        stopBackgroundThread();
 //        super.onPause();
 //    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        playSoundExternal.CloseProcess();
+    }
 }

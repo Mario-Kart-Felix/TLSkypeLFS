@@ -405,6 +405,22 @@ public class PlaySoundExternal {
         return  numBytesReadLastVideo;
     }
 
+    public InputStream  GetVideoProcessInputStream()
+    {
+       if(videoProcess == null)
+           return  null;
+
+       return videoProcess.getInputStream();
+    }
+
+    Process videoProcess;
+
+    public  void CloseProcess()
+    {
+        if(videoProcess != null)
+            videoProcess.destroy();
+    }
+
     public void RunProcess(int caller, Context context)
     {
         File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
@@ -448,56 +464,59 @@ public class PlaySoundExternal {
         String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
         String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
 
-//        final Process audioProcess = shellCommandCustom.run(command);
-//
-//        new Thread(new Runnable() {
-//            public void run() {
-//
-//                InitSound();
-//
-//                InputStream inputStream = audioProcess.getInputStream();
-//
-//                while (true) {
-//
-////                    try {
-////                        String line;
-////                        BufferedReader reader = new BufferedReader(new InputStreamReader(audioProcess.getErrorStream()));
-////                        while ((line = reader.readLine()) != null) {
-////                            Log.d("STREAM_AUDIO", line);
-////                        }
-////                    } catch (IOException e) {
-////                        e.printStackTrace();
-////                    }
-//
-////                    try {
-////
-//////                        Log.d("STREAM_AUDIO", "Before Audio Read");
-////
-////                        numBytesReadLastAudio = inputStream.read(audioBuffer);
-////
-////                        SendData(audioBuffer, numBytesReadLastAudio);
-////
-//////                        Log.d("STREAM_AUDIO", "Audio Output " + " " + unsignedToBytes(audioBuffer[0]) + " " + unsignedToBytes(audioBuffer[1]) + " " + numBytesReadLastAudio);
-////
-////                    } catch (IOException e) {
-////                        e.printStackTrace();
-////                    }
-//
+        final Process audioProcess = shellCommandCustom.run(command);
+
+        new Thread(new Runnable() {
+            public void run() {
+
+                InitSound();
+
+                InputStream inputStream = audioProcess.getInputStream();
+
+                while (true) {
+
 //                    try {
-//                        Thread.sleep(1);
-//                    } catch (InterruptedException e) {
+//                        String line;
+//                        BufferedReader reader = new BufferedReader(new InputStreamReader(audioProcess.getErrorStream()));
+//                        while ((line = reader.readLine()) != null) {
+//                            Log.d("STREAM_AUDIO", line);
+//                        }
+//                    } catch (IOException e) {
 //                        e.printStackTrace();
 //                    }
-//                }
-//            }
-//        }).start();
 
-        input = "-y  -i rtsp://13.126.154.86:5454/"  + (caller == 1 ? "caller.mpeg4" : "caller.mpeg4") + " -";
+                    try {
+
+//                        Log.d("STREAM_AUDIO", "Before Audio Read");
+
+                        numBytesReadLastAudio = inputStream.read(audioBuffer);
+
+                        SendData(audioBuffer, numBytesReadLastAudio);
+
+//                        Log.d("STREAM_AUDIO", "Audio Output " + " " + unsignedToBytes(audioBuffer[0]) + " " + unsignedToBytes(audioBuffer[1]) + " " + numBytesReadLastAudio);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+
+        input = "-y -rtsp_transport tcp -i rtsp://13.126.154.86:5454/"  + (caller == 1 ? "caller.mpeg4" : "caller.mpeg4") + " -f image2pipe -vcodec mjpeg -";
         cmds = input.split(" ");
         command = (String[]) this.concatenate(ffmpegBinary, cmds);
 
-        final Process videoProcess = shellCommandCustom.run(command);
+        videoProcess = shellCommandCustom.run(command);
+    }
 
+    public void ReadVideo()
+    {
         new Thread(new Runnable() {
             public void run() {
                 videoBuffer = new byte[numBytesPerReadVideo];
@@ -517,8 +536,10 @@ public class PlaySoundExternal {
 
                     try {
 
-                        numBytesReadLastVideo = inputStream.read(videoBuffer);
+                        if(numBytesReadLastVideo > 0)
+                            continue;
 
+                        numBytesReadLastVideo = inputStream.read(videoBuffer);
 
                         Log.d("STREAM_AUDIO", "Video Output " + " " + unsignedToBytes(videoBuffer[0]) + " " + unsignedToBytes(videoBuffer[1]) + " " + numBytesReadLastVideo);
 

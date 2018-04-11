@@ -16,7 +16,7 @@ using UnityEngine;
 
 public class StreamReceiver
 {
-    int numDataPerRead = 7372800;
+    int numDataPerRead = 100000;
     byte[] data;
     byte[] tempData = new byte[100000];
     int count = 0;
@@ -40,7 +40,7 @@ public class StreamReceiver
     AndroidJavaClass unityClass;
     AndroidJavaClass pluginClass;
     AndroidJavaObject pluginObject;
-
+    AndroidJavaClass inputStreamClass;
 
     public StreamReceiver(StreamReader stream, RawImage targetImage, Vector2 textureSize, bool directRead = true)
     {
@@ -58,6 +58,7 @@ public class StreamReceiver
                 unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
                 pluginClass = new AndroidJavaClass("audiotest.takeleap.com.playsound.PlaySoundExternal");
                 pluginObject = pluginClass.CallStatic<AndroidJavaObject>("instance");
+                inputStreamClass = new AndroidJavaClass("java.io.InputStream");
             }
         }
         else
@@ -81,68 +82,93 @@ public class StreamReceiver
 
     public void ThreadUpdate()
     {
-        if (!directRead)
+        if (Application.platform == RuntimePlatform.Android)
         {
-            if (Application.platform == RuntimePlatform.Android)
+            AndroidJNI.AttachCurrentThread();
+
+            IntPtr instancePtr = AndroidJNI.CallStaticObjectMethod(pluginClass.GetRawClass(), AndroidJNI.GetStaticMethodID(pluginClass.GetRawClass(), "instance",
+                                                                        "()Laudiotest/takeleap/com/playsound/PlaySoundExternal;"), new jvalue[] { });
+
+            Debug.Log(AndroidJNI.CallIntMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "TestPluginNonStatic",
+                                                                    "()I"), new jvalue[] { }));
+
+
+            IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClass.GetRawClass(), AndroidJNI.GetStaticFieldID(unityClass.GetRawClass(), "currentActivity", "Landroid/app/Activity;"));
+
+            AndroidJNI.CallVoidMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "RunProcess",
+                                                                    "(ILandroid/content/Context;)V"),
+                                                                    new jvalue[] { new jvalue() { i = 0 }, new jvalue() { l = currentActivityPtr } });
+
+            IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "GetVideoProcessInputStream",
+                                                                    "()Ljava/io/InputStream;"),
+                                                                    new jvalue[] { });
+
+            IntPtr numsPtr = AndroidJNI.ToByteArray(newData);
+
+            while (true)
             {
-                AndroidJNI.AttachCurrentThread();
+                int bytesRead = numDataPerRead;
 
-                pluginObject.Call(
-                    "RunProcess",
-                    0,
-                    unityClass.GetStatic<AndroidJavaObject>("currentActivity"));
-            }
-        }
+                bytesRead = AndroidJNI.CallIntMethod(inputStreamPtr, AndroidJNI.GetMethodID(inputStreamClass.GetRawClass(), "read",
+                                                                    "([BII)I"),
+                                                                    new jvalue[] { new jvalue() { l = numsPtr }, new jvalue() { i = 0 }, new jvalue() { i = numDataPerRead } });
 
-        while (true)
-        {
-            int bytesRead = numDataPerRead;
+                newData = AndroidJNIHelper.ConvertFromJNIArray<byte[]>(numsPtr);
 
-            if (directRead)
-            {
-                bytesRead = stdout.Read(newData, 0, numDataPerRead);
-            }
-            else
-            {
-                bytesRead = pluginObject.Call<int>("GetVideoNumReadLast");
+                // Debug.Log("Num Read " + bytesRead + " " + newData[12] + " " + newData[1000]);
 
-                Debug.Log(bytesRead);
+                int index = SearchBytePatternAndroid();
 
-                if(bytesRead > 0)
+                if (index != -1)
                 {
-                    newData = pluginObject.Call<byte[]>("GetVideoBuffer");
+                    Buffer.BlockCopy(newData, 0, tempData, count, index);
+                    count += index;
+
+                    data = new byte[count];
+                    Buffer.BlockCopy(tempData, 0, data, 0, count);
+
+                    index += 2;
+
+                    Buffer.BlockCopy(newData, index, tempData, 0, bytesRead - index);
+                    count = bytesRead - index;
                 }
                 else
                 {
-                    Thread.Sleep(10);
-                    continue;
+                    Buffer.BlockCopy(newData, 0, tempData, count, bytesRead);
+                    count += bytesRead;
                 }
             }
 
-            int index = 0;
-            
-            if(Application.platform == RuntimePlatform.Android)
-               index = SearchBytePatternAndroid();
-            else
-               index = SearchBytePattern();
-
-            if (index != -1)
+            AndroidJNI.DeleteLocalRef(numsPtr);
+        }
+        else
+        {
+            while (true)
             {
-                Buffer.BlockCopy(newData, 0, tempData, count, index);
-                count += index;
+                int bytesRead = numDataPerRead;
 
-                data = new byte[count];
-                Buffer.BlockCopy(tempData, 0, data, 0, count);
+                bytesRead = stdout.Read(newData, 0, numDataPerRead);
 
-                index += 2;
+                int index = SearchBytePattern();
 
-                Buffer.BlockCopy(newData, index, tempData, 0, bytesRead - index);
-                count = bytesRead - index;
-            }
-            else
-            {
-                Buffer.BlockCopy(newData, 0, tempData, count, bytesRead);
-                count += bytesRead;
+                if (index != -1)
+                {
+                    Buffer.BlockCopy(newData, 0, tempData, count, index);
+                    count += index;
+
+                    data = new byte[count];
+                    Buffer.BlockCopy(tempData, 0, data, 0, count);
+
+                    index += 2;
+
+                    Buffer.BlockCopy(newData, index, tempData, 0, bytesRead - index);
+                    count = bytesRead - index;
+                }
+                else
+                {
+                    Buffer.BlockCopy(newData, 0, tempData, count, bytesRead);
+                    count += bytesRead;
+                }
             }
         }
     }
@@ -212,5 +238,10 @@ public class StreamReceiver
     {
         if (renderThread != null)
             renderThread.Abort();
+
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            pluginObject.Call("CloseProcess");
+        }
     }
 }
