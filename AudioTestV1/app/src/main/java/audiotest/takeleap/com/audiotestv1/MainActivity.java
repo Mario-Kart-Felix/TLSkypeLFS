@@ -139,10 +139,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        playSoundExternal = new PlaySoundExternal();
-        playSoundExternal.RunProcess(0, getApplicationContext());
+//        playSoundExternal = new PlaySoundExternal();
+//        playSoundExternal.RunProcess(0, getApplicationContext());
 
-        //CameraOpen();
+        CameraOpen();
     }
 
     public  void CameraOpen()
@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
 //                    // 384 and the image width is 352.
                     final Image.Plane[] planes = image.getPlanes();
                     ByteBuffer byteBuffer = planes[0].getBuffer();
-                    Log.d(TAG, "Image Available " + byteBuffer.get(400));
+                    Log.d(TAG, "Image Available " + byteBuffer.get(400) + " " + byteBuffer.position());
 
 //                    final int total = planes[0].getRowStride() * mHeight;
 //                    if (mRgbBuffer == null || mRgbBuffer.length < total)
@@ -318,30 +318,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-////        Log.e(TAG, "onResume");
-////        startBackgroundThread();
-////        if (textureView.isAvailable()) {
-////            openCamera();
-////        } else {
-////            textureView.setSurfaceTextureListener(textureListener);
-////        }
-//    }
-//
-//    @Override
-//    protected void onPause() {
-//        Log.e(TAG, "onPause");
-////        closeCamera();
-////        stopBackgroundThread();
-//        super.onPause();
-//    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.e(TAG, "onResume");
+        startBackgroundThread();
+        if (textureView.isAvailable()) {
+            openCamera();
+        } else {
+            textureView.setSurfaceTextureListener(textureListener);
+        }
+    }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-        playSoundExternal.CloseProcess();
+    protected void onPause() {
+        Log.e(TAG, "onPause");
+        closeCamera();
+        stopBackgroundThread();
+        super.onPause();
     }
+
+//    @Override
+//    public void onDestroy() {
+//        super.onDestroy();
+//
+//        playSoundExternal.CloseProcess();
+//    }
 }
