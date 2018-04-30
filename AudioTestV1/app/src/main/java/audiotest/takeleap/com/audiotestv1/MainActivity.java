@@ -3,9 +3,12 @@ package audiotest.takeleap.com.audiotestv1;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -35,19 +38,22 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringReader;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import audiotest.takeleap.com.playsound.PlaySoundExternal;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "STREAM_AUDIO";
@@ -84,6 +90,87 @@ public class MainActivity extends AppCompatActivity {
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
         }
     };
+
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
+
+    public void RunProcess(Context context)
+    {
+        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
+
+        if(ffmpegFile.exists())
+        {
+            Log.d(TAG, "FFMPEG EXISTS");
+        }
+        else
+        {
+            Log.d(TAG, "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
+
+            AssetManager assetManager = context.getAssets();
+            InputStream in = null;
+            OutputStream out = null;
+            try
+            {
+                in = assetManager.open("ffmpeg");
+                ffmpegFile.createNewFile();
+                ffmpegFile.setExecutable(true);
+                out = new FileOutputStream(ffmpegFile);
+                copyFile(in, out);
+                in.close();
+                out.close();
+            }
+            catch (IOException e)
+            {
+                Log.d(TAG, "Failed to copy asset file: " + "ffmpeg", e);
+            }
+        }
+
+        if(!ffmpegFile.exists())
+        {
+            return;
+        }
+
+        Log.d(TAG, "HERER HERE HERER");
+
+        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
+
+        String input = "-y -re -loop 1 -framerate 24 -i " + filePath + "/SavedImages/testimage.jpg -c:v libx264 -b:v 5000k -t 10 -pix_fmt yuv420p " + filePath + "/SavedImages/oout.mp4";
+        String[] cmds = input.split(" ");
+        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
+        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
+
+        final Process videoProcess = shellCommandCustom.run(command);
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    String line;
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(videoProcess.getErrorStream()));
+                    while ((line = reader.readLine()) != null) {
+                        Log.d(TAG, line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+        Log.d(TAG, "NOW WHAT");
+    }
+
+    public String[] concatenate(String[] a, String[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+        String[] c = ((String[]) Array.newInstance(a.getClass().getComponentType(), aLen + bLen));
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+        return c;
+    }
 
     private ImageReader imageReader;
     private Handler mBackgroundHandler;
@@ -131,7 +218,9 @@ public class MainActivity extends AppCompatActivity {
 
     private HandlerThread mBackgroundThread;
 
-    private PlaySoundExternal playSoundExternal;
+    private  String filePath;
+
+    private     Context applicationContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -139,8 +228,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        filePath = Environment.getExternalStorageDirectory().getPath();  //this.getApplicationContext().getex.getPath().toString();
+
+        File ourDir = new File(filePath + "/SavedImages");
+        if(!ourDir.exists())
+        {
+            ourDir.mkdir();
+        }
+
 //        playSoundExternal = new PlaySoundExternal();
 //        playSoundExternal.RunProcess(0, getApplicationContext());
+
+        applicationContext = this.getApplicationContext();
 
         CameraOpen();
     }
@@ -222,14 +321,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    int counter = 0;
+    boolean startedSending = false;
+
     private void openCamera() {
+
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG, "openCamera");
         try {
             cameraId = manager.getCameraIdList()[0];
 
-            Log.e(TAG, "Camera ID " + cameraId);
+            Log.d(TAG, "Camera ID " + cameraId);
+
 
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -237,7 +341,6 @@ public class MainActivity extends AppCompatActivity {
             imageReader = ImageReader.newInstance(  imageDimension.getWidth(),
                                                     imageDimension.getHeight(),
                                                     ImageFormat.YUV_420_888, 30);
-
             ImageReader.OnImageAvailableListener mImageAvailable = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader)
@@ -246,21 +349,29 @@ public class MainActivity extends AppCompatActivity {
                     if (image == null)
                         return;
 
+                    byte[] jpegData = ImageUtils.imageToByteArray(image);
 
-//                    // RowStride of planes may differ from width set to image reader, depends
-//                    // on device and camera hardware, for example on Nexus 6P the rowStride is
-//                    // 384 and the image width is 352.
-                    final Image.Plane[] planes = image.getPlanes();
-                    ByteBuffer byteBuffer = planes[0].getBuffer();
-                    Log.d(TAG, "Image Available " + byteBuffer.get(400) + " " + byteBuffer.position());
+                    String counterText = "";
+                    String counterString = "" + counter;
 
-//                    final int total = planes[0].getRowStride() * mHeight;
-//                    if (mRgbBuffer == null || mRgbBuffer.length < total)
-//                        mRgbBuffer = new int[total];
-//
-//                    getRGBIntFromPlanes(planes);
+                    int counterLength = counterString.length();
 
+                    for(int i = counterLength; i < 5 ; i++)
+                    {
+                        counterText += "0";
+                    }
+
+                    FileManager.writeFrame( filePath + "/SavedImages/testimage.jpg", jpegData);
                     image.close();
+
+                    counter += 1;
+//                    Log.d(TAG, "One Written " + filePath);
+
+                    if(!startedSending)
+                    {
+                        RunProcess(applicationContext);
+                        startedSending = true;
+                    }
                 }
             };
 

@@ -19,6 +19,8 @@ ffplay -fflags nobuffer -flags low_delay -framedrop -strict experimental http://
 
 -y -re -rtbufsize 100M -f dshow -i video="Camera 0" http://13.126.154.86:8090/feed1.ffm -vcodec libx264 -pix_fmt yuv420p
 
+-y -f image2 -loop 1 -i str.jpg -f flv http://13.126.154.86:8090/feed1.ffm
+
 
 14:04:48.259 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  D. = Demuxing supported
 04-07 14:04:48.259 25069-25107/com.takeleap.audiotestv1 D/STREAM_AUDIO:  .E = Muxing supported
