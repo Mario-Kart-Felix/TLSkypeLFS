@@ -139,7 +139,12 @@ public class MainActivity extends AppCompatActivity {
 
         ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
 
-        String input = "-y -re -loop 1 -framerate 24 -i " + filePath + "/SavedImages/testimage.jpg -c:v libx264 -b:v 5000k -t 10 -pix_fmt yuv420p " + filePath + "/SavedImages/oout.mp4";
+        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
+
+//        String input = "-formats";
+
+        Log.d(TAG, input);
+
         String[] cmds = input.split(" ");
         String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
         String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
@@ -351,21 +356,11 @@ public class MainActivity extends AppCompatActivity {
 
                     byte[] jpegData = ImageUtils.imageToByteArray(image);
 
-                    String counterText = "";
-                    String counterString = "" + counter;
-
-                    int counterLength = counterString.length();
-
-                    for(int i = counterLength; i < 5 ; i++)
-                    {
-                        counterText += "0";
-                    }
-
                     FileManager.writeFrame( filePath + "/SavedImages/testimage.jpg", jpegData);
                     image.close();
 
                     counter += 1;
-//                    Log.d(TAG, "One Written " + filePath);
+                    Log.d(TAG, "One Written " + counter);
 
                     if(!startedSending)
                     {
