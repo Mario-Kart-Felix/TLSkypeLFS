@@ -18,3 +18,5 @@ TLSkype.apk
 TLSkype.zip
 aa.apk
 Build/
+Assets/StreamingAssets/FFmpegOut/Windows/out.mp4
+Assets/StreamingAssets/FFmpegOut/Windows/testvideo.mp4

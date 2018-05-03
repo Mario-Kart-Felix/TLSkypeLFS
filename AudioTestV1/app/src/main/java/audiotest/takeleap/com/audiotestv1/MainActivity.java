@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
 
-        String input = "-y -re -i - -codec:v copy -codec:a copy -bsf:v dump_extra -f mpegts udp://192.168.0.127:1234";
+        String input = "-y -re -i -" + " -map 0:0 -map 0:1 -c:a:1 copy -c:v copy -c:a:0 copy -f mpegts -vbsf h264_mp4toannexb http://13.126.154.86:8090/feed1.ffm";
 
         Log.d(TAG, input);
 
@@ -270,6 +270,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.INTERNET}, REQUEST_CAMERA_PERMISSION);
+        }
+
         filePath = Environment.getExternalStorageDirectory().getPath();  //this.getApplicationContext().getex.getPath().toString();
 
         File ourDir = new File(filePath + "/SavedImages");
@@ -277,9 +286,6 @@ public class MainActivity extends AppCompatActivity {
         {
             ourDir.mkdir();
         }
-
-//        playSoundExternal = new PlaySoundExternal();
-//        playSoundExternal.RunProcess(0, getApplicationContext());
 
         applicationContext = this.getApplicationContext();
 
@@ -441,12 +447,6 @@ public class MainActivity extends AppCompatActivity {
             cameraId = manager.getCameraIdList()[0];
 
             Log.d(TAG, "Camera ID " + cameraId);
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, REQUEST_CAMERA_PERMISSION);
-                return;
-            }
 
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
