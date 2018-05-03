@@ -1,6 +1,8 @@
 package audiotest.takeleap.com.audiotestv1;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.Service;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -20,11 +22,13 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcel;
+import android.os.ParcelFileDescriptor;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -41,6 +45,7 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -52,6 +57,8 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -65,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private String cameraId;
     private Size imageDimension;
+    ParcelFileDescriptor[] fdPair;
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -99,9 +107,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void RunProcess(Context context)
+    public void RunProcess()
     {
-        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
+        fdPair = new ParcelFileDescriptor[0];
+        try {
+            fdPair = ParcelFileDescriptor.createPipe();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        readFD = fdPair[0];
+        writeFD = fdPair[1];
+
+        File ffmpegFile = new File(  applicationContext.getFilesDir() + File.separator + "ffmpeg");
 
         if(ffmpegFile.exists())
         {
@@ -111,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         {
             Log.d(TAG, "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
 
-            AssetManager assetManager = context.getAssets();
+            AssetManager assetManager = applicationContext.getAssets();
             InputStream in = null;
             OutputStream out = null;
             try
@@ -139,14 +157,14 @@ public class MainActivity extends AppCompatActivity {
 
         ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
 
-        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
+//        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
 
-//        String input = "-formats";
+        String input = "-y -re -i - -codec:v copy -codec:a copy -bsf:v dump_extra -f mpegts udp://192.168.0.127:1234";
 
         Log.d(TAG, input);
 
         String[] cmds = input.split(" ");
-        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
+        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(applicationContext, null)};
         String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
 
         final Process videoProcess = shellCommandCustom.run(command);
@@ -164,6 +182,45 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
+
+        final ParcelFileDescriptor finalreadFD = readFD;
+
+        Thread readerThread = new Thread() {
+            @Override
+            public void run() {
+
+                byte[] buffer = new byte[8192];
+                int read = 0;
+
+                OutputStream ffmpegInput = videoProcess.getOutputStream();
+
+                final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
+
+                try {
+
+                    while (true) {
+
+                        if (reader.available()>0) {
+                            read = reader.read(buffer);
+                            ffmpegInput.write(buffer, 0, read);
+                        } else {
+                            sleep(10);
+                        }
+
+                    }
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+
+//                    onDestroy();
+                }
+            }
+        };
+
+        readerThread.start();
 
         Log.d(TAG, "NOW WHAT");
     }
@@ -186,26 +243,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "onOpened");
             cameraDevice = camera;
             createCameraPreview();
-
-            new Thread(new Runnable() {
-                public void run() {
-
-                    while (true) {
-
-                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                        textureView.getBitmap().compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-                        byte[] byteArray = byteArrayOutputStream.toByteArray();
-
-//                       Log.d(TAG, "Video Output " + byteArray.length);
-
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }).start();
         }
 
         @Override
@@ -253,14 +290,12 @@ public class MainActivity extends AppCompatActivity {
     {
     //        textureView = (TextureView) findViewById(R.id.textureView);
         textureView = new TextureView(this.getApplicationContext());
-        textureView.setLeft(465);   textureView.setRight(1032);
-        textureView.setTop(48);   textureView.setBottom(1644);
+        textureView.setLeft(0);   textureView.setRight(1280);
+        textureView.setTop(0);   textureView.setBottom(720);
         SurfaceTexture mSurface = new SurfaceTexture(0);
         mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
         textureView.setSurfaceTexture(mSurface);
         textureView.setSurfaceTextureListener(textureListener);
-
-        imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1);
 
 //        Log.d(TAG, "OH NO " + textureView.getWidth()  + " " +  textureView.getRight() + " " + textureView.getLeft() + " " + textureView.getTop() + " " + textureView.getBottom());
 
@@ -290,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
 
             Surface surface = new Surface(texture);
             List surfaces = new ArrayList<>();
@@ -299,26 +334,36 @@ public class MainActivity extends AppCompatActivity {
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             captureRequestBuilder.addTarget(surface);
 
-            Surface readerSurface = imageReader.getSurface();
+            Surface readerSurface = mMediaRecorder.getSurface();
             surfaces.add(readerSurface);
             captureRequestBuilder.addTarget(readerSurface);
 
             cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    //The camera is already closed
-                    if (null == cameraDevice) {
-                        return;
-                    }
-                    // When the session is ready, we start displaying the preview.
+
                     cameraCaptureSessions = cameraCaptureSession;
                     updatePreview();
+
+                    runOnUiThread (new Thread(new Runnable() {
+                        public void run() {
+                                try {
+                                    Thread.sleep(100);
+
+                                    mMediaRecorder.start();
+                                }
+                                catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                    }));
                 }
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    Log.e(TAG, "onConfigureFailed");
-//                    Toast.makeText(AndroidCameraApi.this, "Configuration change", Toast.LENGTH_SHORT).show();
+//                    Activity activity = getActivity();
+                    Log.d(TAG, "onConfigureFailed");
                 }
             }, mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -326,11 +371,69 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    static class CompareSizesByArea implements Comparator<Size> {
+
+        @Override
+        public int compare(Size lhs, Size rhs) {
+            // We cast here to ensure the multiplications won't overflow
+            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
+                    (long) rhs.getWidth() * rhs.getHeight());
+        }
+
+    }
+
+    private static Size chooseVideoSize(Size[] choices) {
+
+        return  new Size(1280, 720);
+
+//        for (Size size : choices) {
+//            Log.d(TAG, "V " +  size.getWidth() + " " + size.getHeight());
+//
+//            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
+//                return size;
+//            }
+//        }
+//        Log.e(TAG, "Couldn't find any suitable video size");
+//        return choices[choices.length - 1];
+    }
+
+    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
+
+        return  new Size(1280, 720);
+
+        // Collect the supported resolutions that are at least as big as the preview Surface
+//        List<Size> bigEnough = new ArrayList<>();
+//        int w = aspectRatio.getWidth();
+//        int h = aspectRatio.getHeight();
+//        for (Size option : choices) {
+//            Log.d(TAG, "P " +  option.getWidth() + " " + option.getHeight());
+//            if (option.getHeight() == option.getWidth() * h / w &&
+//                    option.getWidth() >= width && option.getHeight() >= height) {
+//                bigEnough.add(option);
+//            }
+//        }
+//
+//        // Pick the smallest of those, assuming we found any
+//        if (bigEnough.size() > 0) {
+//            return Collections.min(bigEnough, new CompareSizesByArea());
+//        } else {
+//            Log.e(TAG, "Couldn't find any suitable preview size");
+//            return choices[0];
+//        }
+    }
+
     int counter = 0;
     boolean startedSending = false;
+    private MediaRecorder mMediaRecorder;
+    private Size mPreviewSize;
+    private Size mVideoSize;
 
-    private void openCamera() {
+    ParcelFileDescriptor readFD;
+    ParcelFileDescriptor writeFD;
 
+    private void openCamera()
+    {
+        RunProcess();
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG, "openCamera");
@@ -339,50 +442,43 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "Camera ID " + cameraId);
 
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, REQUEST_CAMERA_PERMISSION);
+                return;
+            }
 
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             imageDimension = map.getOutputSizes(ImageReader.class)[0];
-            imageReader = ImageReader.newInstance(  imageDimension.getWidth(),
-                                                    imageDimension.getHeight(),
-                                                    ImageFormat.YUV_420_888, 30);
-            ImageReader.OnImageAvailableListener mImageAvailable = new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader)
-                {
-                    Image image = reader.acquireLatestImage();
-                    if (image == null)
-                        return;
 
-                    byte[] jpegData = ImageUtils.imageToByteArray(image);
+            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                    textureView.getWidth(), textureView.getHeight(), mVideoSize);
 
-                    FileManager.writeFrame( filePath + "/SavedImages/testimage.jpg", jpegData);
-                    image.close();
+            mMediaRecorder = new MediaRecorder();
+            mMediaRecorder.reset();
 
-                    counter += 1;
-                    Log.d(TAG, "One Written " + counter);
+            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 
-                    if(!startedSending)
-                    {
-                        RunProcess(applicationContext);
-                        startedSending = true;
-                    }
-                }
-            };
+            mMediaRecorder.setOutputFormat(8);
 
-            imageReader.setOnImageAvailableListener(mImageAvailable, mBackgroundHandler);
+            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());//
+            mMediaRecorder.setVideoEncodingBitRate(10000000);
+            mMediaRecorder.setVideoFrameRate(30);
+            mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-            Log.e(TAG, "Image Dimension " + imageDimension.getWidth() + " " + imageDimension.getHeight());
-
-            // Add permission for camera and let user grant the permission
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                return;
-            }
+            mMediaRecorder.prepare();
 
             manager.openCamera(cameraId, stateCallback, null);
-
         } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -391,11 +487,11 @@ public class MainActivity extends AppCompatActivity {
         if (null == cameraDevice) {
             Log.e(TAG, "updatePreview error, return");
         }
-
         Log.d(TAG, "updatePreview");
-
-        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
         try {
+            captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            HandlerThread thread = new HandlerThread("CameraPreview");
+            thread.start();
             cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
