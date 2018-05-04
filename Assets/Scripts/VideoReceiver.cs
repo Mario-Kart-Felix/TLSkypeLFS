@@ -29,7 +29,7 @@ public class VideoReceiver : MonoBehaviour
 
     private SoundStreamReceiver soundStreamReceiver;
 
-    public void StartReceiveStream()
+    public void StartVideoReceiver()
     {
         Application.runInBackground = true;
 
@@ -37,15 +37,15 @@ public class VideoReceiver : MonoBehaviour
 
         if (Application.platform == RuntimePlatform.Android)
         {
-            AndroidPluginStart();
+            ReceiveVideoStream_Android();
         }
         else
         {
-            ReceiveStream();
+            ReceiveVideoStream();
         }
     }
 
-    unsafe void AndroidPluginStart()
+    unsafe void ReceiveVideoStream_Android()
     {
         streamReceiver = new StreamReceiver(null, receiverImage, textureSize, false);
         streamReceiver.StartReceivingStream();
@@ -74,64 +74,26 @@ public class VideoReceiver : MonoBehaviour
                 print("Instance PTR NULL BRO");
             }
 
-            IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginArrayNonStatic",
-                                                                    "()[B"),
-                                                                    new jvalue[] { });
+            // IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginArrayNonStatic",
+            //                                                         "()[B"),
+            //                                                         new jvalue[] { });
 
-            byte[] num = new byte[100];
+            // byte[] num = new byte[100];
 
-            Marshal.Copy(inputStreamPtr, num, 0, 100);
+            // Marshal.Copy(inputStreamPtr, num, 0, 100);
 
-            print(num[22] + " " + num[73]);
-
-            // print(AndroidJNI.CallIntMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginNonStatic",
-            //                                                         "()I"), new jvalue[] { }));
-
-            // IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClassPtr, AndroidJNI.GetStaticFieldID(unityClassPtr, "currentActivity", "Landroid/app/Activity;"));
-
-            // print("Current Activity " + currentActivityPtr == null);
-
-            // IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "GetInputStream",
-            //                                                         "(Landroid/content/Context;)Ljava/io/InputStream;"),
-            //                                                         AndroidJNIHelper.CreateJNIArgArray(new object[] { unityClass.GetStatic<AndroidJavaObject>("currentActivity") }));
-
-            // if (inputStreamPtr != null)
-            // {
-            //     print("INPUT STREAM NOT NULL");
-
-            //     byte[] buffer = new byte[300];
-
-            //     IntPtr unmanagedPointer = Marshal.AllocHGlobal(buffer.Length);
-
-            //     jvalue[] args = AndroidJNIHelper.CreateJNIArgArray(new object[] { buffer });
-
-            //     int numRead = AndroidJNI.CallIntMethod(inputStreamPtr, AndroidJNI.GetMethodID(inputStreamClassPtr, "read", "([B)I"), args);
-
-            //     print(numRead + " " +  Marshal.ReadByte(unmanagedPointer, 12) + " " + Marshal.ReadByte(unmanagedPointer, 55));
-            // }
-            // else
-            // {
-            //     print("INPUT STREAM IS NULL");
-            // }
-
-            // print("END");
+            // print(num[22] + " " + num[73]);
         }
-        // else
-        // {
-        //     print("IS NULL");
-        // }
     }
 
-    void ReceiveStream()
+    void ReceiveVideoStream()
     {
-        // var opt = " -i http://123.176.34.172:8090/" + (SkypeManager.Instance.isCaller ? "test2.mpg" : "test1.mpg") + "-g 60 -map 0 -vcodec rawvideo -f segment -reset_timestamps 1 -segment_format rawvideo -pix_fmt rgb24 " + Application.persistentDataPath
-        //             + "/out%03d.seg";
+        // string opt = "-y -i rtsp://13.126.154.86:5454/" + (SkypeManager.Instance.isCaller ? "caller.mpeg4" : "caller.mpeg4") + " -f image2pipe -vcodec mjpeg -";
 
-        // string opt = "-y -i http://13.126.154.86:8090/" + (SkypeManager.Instance.isCaller ? "test2.mpg" : "test1.mpg") + " -f segment -segment_time 2 -reset_timestamps 1 -vcodec libx264 -b 465k -pix_fmt yuv420p -profile:v baseline -preset ultrafast " + path;
+        string opt =    "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (SkypeManager.Instance.isCaller ? "/receiver" : "/caller") + 
+                        " -f image2pipe -vcodec mjpeg -";
 
-        string opt = "-y -i rtsp://13.126.154.86:5454/" + (SkypeManager.Instance.isCaller ? "caller.mpeg4" : "caller.mpeg4") + " -f image2pipe -vcodec mjpeg -";
-
-        // string opt = "-nostdin -y -i http://13.126.154.86:8090/callerAudio.mp3 -f s16le -acodec pcm_s16le -";
+        print(opt);
 
         ProcessStartInfo info = new ProcessStartInfo(ffmpegPath, opt);
 
@@ -154,8 +116,8 @@ public class VideoReceiver : MonoBehaviour
         streamReceiver = new StreamReceiver(receiveProcess.StandardOutput, receiverImage, textureSize);
         streamReceiver.StartReceivingStream();
 
-        soundStreamReceiver = new SoundStreamReceiver();
-        soundStreamReceiver.StartReceivingAudio();
+        // soundStreamReceiver = new SoundStreamReceiver();
+        // soundStreamReceiver.StartReceivingAudio();
     }
 
     void ErrorDataReceived(object sender, DataReceivedEventArgs e)

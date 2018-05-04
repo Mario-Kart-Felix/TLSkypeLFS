@@ -36,42 +36,28 @@ public class VideoSender : MonoBehaviour
 
         ffmpegPath = FFmpegConfig.BinaryPath;
 
-        //         string path = "InputVideo/input%03d.mp4";
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            SendVideo_Android();
+        }
+        else
+        {
+            SendVideo();
+        }
+    }
 
-        // #if UNITY_EDITOR
-        //         path = Application.dataPath.Replace("/Assets", "") + "/" + path;
-        // #elif UNITY_STANDALONE
-        // 		path = Application.streamingAssetsPath + "/" + path;
-        // #endif
-
-        // var opt = "-y -i http://123.176.34.172:8090/test1.mpg -f segment -reset_timestamps 1 " + path;
-
-        // string opt = "-y -re -rtbufsize 100M -f dshow -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0]
-        //  + "\" http://13.126.154.86:8090/"
-        //  + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm") + " -f segment -segment_time 2 -reset_timestamps 1 -vcodec libvpx -b 465k -pix_fmt yuv420p -profile:v baseline -preset ultrafast  " + path;
-
+    void SendVideo()
+    {
         if (UnityEngine.WebCamTexture.devices.Length == 0)
             return;
 
-        // string opt = "-y -re -rtbufsize 1024M -f dshow -video_size 640x480 -framerate 24  -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0] + "\""
-        //     + " http://13.126.154.86:8090/"
-        //     + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm")
-        //     + " -f image2pipe -vcodec mjpeg -";
-
         string opt = "-y -f dshow -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0] + "\""
-                 + " http://13.126.154.86:8090/"
-                 + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm")
+                 + " -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (SkypeManager.Instance.isCaller ? "/caller" : "/receiver")
                  + " -f image2pipe -vcodec mjpeg -";
 
-        // string opt = "-y -rtbufsize 2048M -f dshow -video_size 1920x1080 -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\"" 
-        //          + " -an -f image2pipe -vcodec mjpeg -";
-
-    //     string opt = "-y -f dshow -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0] + "\""
-    //    + " -f image2pipe -vcodec mjpeg -";
+        print(opt);
 
         var info = new ProcessStartInfo(ffmpegPath, opt);
-
-        UnityEngine.Debug.Log(opt);
 
         info.UseShellExecute = false;
         info.CreateNoWindow = true;
@@ -90,6 +76,11 @@ public class VideoSender : MonoBehaviour
 
         streamReceiver = new StreamReceiver(senderProcess.StandardOutput, senderImage, textureSize);
         streamReceiver.StartReceivingStream();
+    }
+
+    void SendVideo_Android()
+    {
+        
     }
 
     void ErrorDataReceived(object sender, DataReceivedEventArgs e)

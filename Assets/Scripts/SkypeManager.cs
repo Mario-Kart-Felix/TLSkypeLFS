@@ -160,12 +160,8 @@ public class SkypeManager : MonoBehaviour
         buttonCanvas.SetActive(false);
         mainCanvas.SetActive(true);
 
-        videoReceiver.StartReceiveStream();
-
-        if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer)
-        {
-            videoSender.StartVideoSender();
-        }
+        videoSender.StartVideoSender();
+        videoReceiver.StartVideoReceiver();
     }
 
     public void SendFile(string fullFileName)

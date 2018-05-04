@@ -35,7 +35,6 @@ public class SoundStreamReceiver
 
     woLib WaveOut = new woLib();
 
-
     private bool audioPresent = false;
 
     private int bytesRead = 0;
@@ -61,7 +60,7 @@ public class SoundStreamReceiver
         //  + "\" http://13.126.154.86:8090/"
         //  + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm") + " -f segment -segment_time 2 -reset_timestamps 1 -vcodec libvpx -b 465k -pix_fmt yuv420p -profile:v baseline -preset ultrafast  " + path;
 
-        string opt = "-y -i rtsp://13.126.154.86:5454/" + (SkypeManager.Instance.isCaller ? "callerAudio.mp3" : "callerAudio.mp3") + " -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
+        string opt = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (SkypeManager.Instance.isCaller ? "/receiver" : "/caller")  + " -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
         // string opt = "-y -f dshow -i audio=\"" + UnityEngine.Microphone.devices[0] + "\"" + " -vn -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
 
         ProcessStartInfo info = new ProcessStartInfo(Application.streamingAssetsPath + "/FFmpegOut/Windows/WaveOutTestCSharp.exe", opt);

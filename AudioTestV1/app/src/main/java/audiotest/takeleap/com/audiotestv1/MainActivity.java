@@ -61,6 +61,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import audiotest.takeleap.com.playsound.PlaySoundExternal;
+
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "STREAM_AUDIO";
@@ -72,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private String cameraId;
     private Size imageDimension;
-    ParcelFileDescriptor[] fdPair;
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -109,16 +110,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void RunProcess()
     {
-        fdPair = new ParcelFileDescriptor[0];
-        try {
-            fdPair = ParcelFileDescriptor.createPipe();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        readFD = fdPair[0];
-        writeFD = fdPair[1];
-
         File ffmpegFile = new File(  applicationContext.getFilesDir() + File.separator + "ffmpeg");
 
         if(ffmpegFile.exists())
@@ -159,7 +150,9 @@ public class MainActivity extends AppCompatActivity {
 
 //        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
 
-        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://a.rtmp.youtube.com/live2/u79f-7195-97vk-9qe9";
+        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live/receiver";
+
+//        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://a.rtmp.youtube.com/live2/u79f-7195-97vk-9qe9";
 
         Log.d(TAG, input);
 
@@ -269,15 +262,6 @@ public class MainActivity extends AppCompatActivity {
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED)
-        {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.INTERNET}, REQUEST_CAMERA_PERMISSION);
-        }
 
         filePath = Environment.getExternalStorageDirectory().getPath();  //this.getApplicationContext().getex.getPath().toString();
 
@@ -434,12 +418,10 @@ public class MainActivity extends AppCompatActivity {
     private Size mPreviewSize;
     private Size mVideoSize;
 
-    ParcelFileDescriptor readFD;
-    ParcelFileDescriptor writeFD;
-
     private void openCamera()
     {
-        RunProcess();
+        PlaySoundExternal playSoundExternal = new PlaySoundExternal();
+        playSoundExternal.SendVideoAudioProcess(1, this.getApplicationContext());
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG, "openCamera");
@@ -465,10 +447,10 @@ public class MainActivity extends AppCompatActivity {
 
             mMediaRecorder.setOutputFormat(8);
 
-            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());//
-            mMediaRecorder.setVideoEncodingBitRate(10000000);
+            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
+            mMediaRecorder.setVideoEncodingBitRate(4500);
             mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            mMediaRecorder.setVideoSize(640, 480);
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
             mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
