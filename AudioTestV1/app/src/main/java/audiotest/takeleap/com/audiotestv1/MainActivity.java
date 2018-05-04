@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
 
-        String input = "-y -re -i -" + " -map 0:0 -map 0:1 -c:a:1 copy -c:v copy -c:a:0 copy -f mpegts -vbsf h264_mp4toannexb http://13.126.154.86:8090/feed1.ffm";
+        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://a.rtmp.youtube.com/live2/u79f-7195-97vk-9qe9";
 
         Log.d(TAG, input);
 
