@@ -196,6 +196,8 @@ public class woLib : IDisposable
                 int j = 200;
                 UInt32* i = (UInt32*)rFrames.ToPointer();
                 while ((0 < j--) && (*i != 0xffffffff)) Thread.Sleep(10);           // check for waveout close to complete; timeout included if no callback is used.
+            
+                UnityEngine.Debug.Log("Closed");
             }
         hwo = (IntPtr)0;
     }

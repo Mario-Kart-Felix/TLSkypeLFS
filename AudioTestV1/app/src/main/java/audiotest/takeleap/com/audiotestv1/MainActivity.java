@@ -110,112 +110,112 @@ public class MainActivity extends AppCompatActivity {
 
     public void RunProcess()
     {
-        File ffmpegFile = new File(  applicationContext.getFilesDir() + File.separator + "ffmpeg");
-
-        if(ffmpegFile.exists())
-        {
-            Log.d(TAG, "FFMPEG EXISTS");
-        }
-        else
-        {
-            Log.d(TAG, "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
-
-            AssetManager assetManager = applicationContext.getAssets();
-            InputStream in = null;
-            OutputStream out = null;
-            try
-            {
-                in = assetManager.open("ffmpeg");
-                ffmpegFile.createNewFile();
-                ffmpegFile.setExecutable(true);
-                out = new FileOutputStream(ffmpegFile);
-                copyFile(in, out);
-                in.close();
-                out.close();
-            }
-            catch (IOException e)
-            {
-                Log.d(TAG, "Failed to copy asset file: " + "ffmpeg", e);
-            }
-        }
-
-        if(!ffmpegFile.exists())
-        {
-            return;
-        }
-
-        Log.d(TAG, "HERER HERE HERER");
-
-        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
-
-//        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
-
-        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live/receiver";
-
-//        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://a.rtmp.youtube.com/live2/u79f-7195-97vk-9qe9";
-
-        Log.d(TAG, input);
-
-        String[] cmds = input.split(" ");
-        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(applicationContext, null)};
-        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        final Process videoProcess = shellCommandCustom.run(command);
-
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    String line;
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(videoProcess.getErrorStream()));
-                    while ((line = reader.readLine()) != null) {
-                        Log.d(TAG, line);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
-        final ParcelFileDescriptor finalreadFD = readFD;
-
-        Thread readerThread = new Thread() {
-            @Override
-            public void run() {
-
-                byte[] buffer = new byte[8192];
-                int read = 0;
-
-                OutputStream ffmpegInput = videoProcess.getOutputStream();
-
-                final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
-
-                try {
-
-                    while (true) {
-
-                        if (reader.available()>0) {
-                            read = reader.read(buffer);
-                            ffmpegInput.write(buffer, 0, read);
-                        } else {
-                            sleep(10);
-                        }
-
-                    }
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-
-//                    onDestroy();
-                }
-            }
-        };
-
-        readerThread.start();
-
-        Log.d(TAG, "NOW WHAT");
+//        File ffmpegFile = new File(  applicationContext.getFilesDir() + File.separator + "ffmpeg");
+//
+//        if(ffmpegFile.exists())
+//        {
+//            Log.d(TAG, "FFMPEG EXISTS");
+//        }
+//        else
+//        {
+//            Log.d(TAG, "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
+//
+//            AssetManager assetManager = applicationContext.getAssets();
+//            InputStream in = null;
+//            OutputStream out = null;
+//            try
+//            {
+//                in = assetManager.open("ffmpeg");
+//                ffmpegFile.createNewFile();
+//                ffmpegFile.setExecutable(true);
+//                out = new FileOutputStream(ffmpegFile);
+//                copyFile(in, out);
+//                in.close();
+//                out.close();
+//            }
+//            catch (IOException e)
+//            {
+//                Log.d(TAG, "Failed to copy asset file: " + "ffmpeg", e);
+//            }
+//        }
+//
+//        if(!ffmpegFile.exists())
+//        {
+//            return;
+//        }
+//
+//        Log.d(TAG, "HERER HERE HERER");
+//
+//        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
+//
+////        String input = "-y -re -loop 1 -i " + filePath + "/SavedImages/testimage.jpg -t 50 -pix_fmt yuv420p http://13.126.154.86:8090/feed3.ffm";
+//
+//        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live/receiver";
+//
+////        String input = "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://a.rtmp.youtube.com/live2/u79f-7195-97vk-9qe9";
+//
+//        Log.d(TAG, input);
+//
+//        String[] cmds = input.split(" ");
+//        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(applicationContext, null)};
+//        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
+//
+//        final Process videoProcess = shellCommandCustom.run(command);
+//
+//        new Thread(new Runnable() {
+//            public void run() {
+//                try {
+//                    String line;
+//                    BufferedReader reader = new BufferedReader(new InputStreamReader(videoProcess.getErrorStream()));
+//                    while ((line = reader.readLine()) != null) {
+//                        Log.d(TAG, line);
+//                    }
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }).start();
+//
+//        final ParcelFileDescriptor finalreadFD = readFD;
+//
+//        Thread readerThread = new Thread() {
+//            @Override
+//            public void run() {
+//
+//                byte[] buffer = new byte[8192];
+//                int read = 0;
+//
+//                OutputStream ffmpegInput = videoProcess.getOutputStream();
+//
+//                final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
+//
+//                try {
+//
+//                    while (true) {
+//
+//                        if (reader.available()>0) {
+//                            read = reader.read(buffer);
+//                            ffmpegInput.write(buffer, 0, read);
+//                        } else {
+//                            sleep(10);
+//                        }
+//
+//                    }
+//
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//
+////                    onDestroy();
+//                }
+//            }
+//        };
+//
+//        readerThread.start();
+//
+//        Log.d(TAG, "NOW WHAT");
     }
 
     public String[] concatenate(String[] a, String[] b) {
@@ -257,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
 
     private     Context applicationContext;
 
+    private PlaySoundExternal playSoundExternal = new PlaySoundExternal();
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -273,7 +275,10 @@ public class MainActivity extends AppCompatActivity {
 
         applicationContext = this.getApplicationContext();
 
-        CameraOpen();
+        playSoundExternal.RequestRequiredPermissions(this.getApplicationContext(), this);
+        playSoundExternal.SendVideoAudioProcess(1, this.getApplicationContext());
+
+//        CameraOpen();
     }
 
     public  void CameraOpen()
@@ -313,52 +318,52 @@ public class MainActivity extends AppCompatActivity {
     protected void createCameraPreview() {
         Log.e(TAG, "createCameraPreview");
 
-        try {
-            SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-
-            Surface surface = new Surface(texture);
-            List surfaces = new ArrayList<>();
-            surfaces.add(surface);
-
-            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-            captureRequestBuilder.addTarget(surface);
-
-            Surface readerSurface = mMediaRecorder.getSurface();
-            surfaces.add(readerSurface);
-            captureRequestBuilder.addTarget(readerSurface);
-
-            cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
-
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-
-                    cameraCaptureSessions = cameraCaptureSession;
-                    updatePreview();
-
-                    runOnUiThread (new Thread(new Runnable() {
-                        public void run() {
-                                try {
-                                    Thread.sleep(100);
-
-                                    mMediaRecorder.start();
-                                }
-                                catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                    }));
-                }
-
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-//                    Activity activity = getActivity();
-                    Log.d(TAG, "onConfigureFailed");
-                }
-            }, mBackgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            SurfaceTexture texture = textureView.getSurfaceTexture();
+//            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+//
+//            Surface surface = new Surface(texture);
+//            List surfaces = new ArrayList<>();
+//            surfaces.add(surface);
+//
+//            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+//            captureRequestBuilder.addTarget(surface);
+//
+//            Surface readerSurface = mMediaRecorder.getSurface();
+//            surfaces.add(readerSurface);
+//            captureRequestBuilder.addTarget(readerSurface);
+//
+//            cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+//
+//                @Override
+//                public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+//
+//                    cameraCaptureSessions = cameraCaptureSession;
+//                    updatePreview();
+//
+//                    runOnUiThread (new Thread(new Runnable() {
+//                        public void run() {
+//                                try {
+//                                    Thread.sleep(100);
+//
+//                                    mMediaRecorder.start();
+//                                }
+//                                catch (InterruptedException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                    }));
+//                }
+//
+//                @Override
+//                public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+////                    Activity activity = getActivity();
+//                    Log.d(TAG, "onConfigureFailed");
+//                }
+//            }, mBackgroundHandler);
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
     }
 
     static class CompareSizesByArea implements Comparator<Size> {
@@ -411,58 +416,57 @@ public class MainActivity extends AppCompatActivity {
 //            return choices[0];
 //        }
     }
-
-    int counter = 0;
-    boolean startedSending = false;
-    private MediaRecorder mMediaRecorder;
-    private Size mPreviewSize;
-    private Size mVideoSize;
+//
+//    int counter = 0;
+//    boolean startedSending = false;
+//    private MediaRecorder mMediaRecorder;
+//    private Size mPreviewSize;
+//    private Size mVideoSize;
 
     private void openCamera()
     {
-        PlaySoundExternal playSoundExternal = new PlaySoundExternal();
         playSoundExternal.SendVideoAudioProcess(1, this.getApplicationContext());
 
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        Log.e(TAG, "openCamera");
-        try {
-            cameraId = manager.getCameraIdList()[0];
-
-            Log.d(TAG, "Camera ID " + cameraId);
-
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            imageDimension = map.getOutputSizes(ImageReader.class)[0];
-
-            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
-            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    textureView.getWidth(), textureView.getHeight(), mVideoSize);
-
-            mMediaRecorder = new MediaRecorder();
-            mMediaRecorder.reset();
-
-            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-
-            mMediaRecorder.setOutputFormat(8);
-
-            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
-            mMediaRecorder.setVideoEncodingBitRate(4500);
-            mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(640, 480);
-            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-
-            mMediaRecorder.prepare();
-
-            manager.openCamera(cameraId, stateCallback, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+//        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+//        Log.e(TAG, "openCamera");
+//        try {
+//            cameraId = manager.getCameraIdList()[0];
+//
+//            Log.d(TAG, "Camera ID " + cameraId);
+//
+//            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+//            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+//            imageDimension = map.getOutputSizes(ImageReader.class)[0];
+//
+//            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+//            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+//                    textureView.getWidth(), textureView.getHeight(), mVideoSize);
+//
+//            mMediaRecorder = new MediaRecorder();
+//            mMediaRecorder.reset();
+//
+//            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+//            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+////            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+//
+//            mMediaRecorder.setOutputFormat(8);
+//
+//            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
+//            mMediaRecorder.setVideoEncodingBitRate(4500);
+//            mMediaRecorder.setVideoFrameRate(30);
+//            mMediaRecorder.setVideoSize(640, 480);
+//            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+//            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+//
+//            mMediaRecorder.prepare();
+//
+//            manager.openCamera(cameraId, stateCallback, null);
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     protected void updatePreview() {
@@ -506,19 +510,19 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.e(TAG, "onResume");
-        startBackgroundThread();
-        if (textureView.isAvailable()) {
-            openCamera();
-        } else {
-            textureView.setSurfaceTextureListener(textureListener);
-        }
+//        startBackgroundThread();
+//        if (textureView.isAvailable()) {
+//            openCamera();
+//        } else {
+//            textureView.setSurfaceTextureListener(textureListener);
+//        }
     }
 
     @Override
     protected void onPause() {
         Log.e(TAG, "onPause");
-        closeCamera();
-        stopBackgroundThread();
+//        closeCamera();
+//        stopBackgroundThread();
         super.onPause();
     }
 

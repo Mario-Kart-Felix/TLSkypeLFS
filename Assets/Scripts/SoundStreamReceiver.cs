@@ -33,7 +33,7 @@ public class SoundStreamReceiver
 
     private bool firstTime = true;
 
-    woLib WaveOut = new woLib();
+    woLib woLibObject = new woLib();
 
     private bool audioPresent = false;
 
@@ -42,43 +42,30 @@ public class SoundStreamReceiver
 
     public void StartReceivingAudio()
     {
-        Application.runInBackground = true;
+        // Application.runInBackground = true;
 
-        ffmpegPath = FFmpegConfig.BinaryPath;
+        // ffmpegPath = FFmpegConfig.BinaryPath;
 
-        //         string path = "InputVideo/input%03d.mp4";
+        // string opt = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (SkypeManager.Instance.isCaller ? "/receiver" : "/caller")  + " -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
 
-        // #if UNITY_EDITOR
-        //         path = Application.dataPath.Replace("/Assets", "") + "/" + path;
-        // #elif UNITY_STANDALONE
-        // 		path = Application.streamingAssetsPath + "/" + path;
-        // #endif
+        // ProcessStartInfo info = new ProcessStartInfo(Application.streamingAssetsPath + "/FFmpegOut/Windows/WaveOutTestCSharp.exe", opt);
 
-        // var opt = "-y -i http://123.176.34.172:8090/test1.mpg -f segment -reset_timestamps 1 " + path;
+        // UnityEngine.Debug.Log(opt);
 
-        // string opt = "-y -re -rtbufsize 100M -f dshow -i video=\"" + UnityEngine.WebCamTexture.devices[0].name + "\":audio=\"" + UnityEngine.Microphone.devices[0]
-        //  + "\" http://13.126.154.86:8090/"
-        //  + (SkypeManager.Instance.isCaller ? "feed1.ffm" : "feed2.ffm") + " -f segment -segment_time 2 -reset_timestamps 1 -vcodec libvpx -b 465k -pix_fmt yuv420p -profile:v baseline -preset ultrafast  " + path;
+        // info.UseShellExecute = false;
+        // info.CreateNoWindow = true;
+        // info.RedirectStandardInput = false;
+        // info.RedirectStandardOutput = false;
+        // info.RedirectStandardError = false;
 
-        string opt = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (SkypeManager.Instance.isCaller ? "/receiver" : "/caller")  + " -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
-        // string opt = "-y -f dshow -i audio=\"" + UnityEngine.Microphone.devices[0] + "\"" + " -vn -f wav -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 -";
+        // audioProcess = new Process();
+        // audioProcess.StartInfo = info;
+        // audioProcess.EnableRaisingEvents = false;
+        // audioProcess.Start();
 
-        ProcessStartInfo info = new ProcessStartInfo(Application.streamingAssetsPath + "/FFmpegOut/Windows/WaveOutTestCSharp.exe", opt);
+        // FileStream  fileStream = new FileStream("c:\\out.wav", FileMode.Open);
 
-        UnityEngine.Debug.Log(opt);
-
-        info.UseShellExecute = false;
-        info.CreateNoWindow = true;
-        info.RedirectStandardInput = false;
-        info.RedirectStandardOutput = false;
-        info.RedirectStandardError = false;
-
-        audioProcess = new Process();
-        audioProcess.StartInfo = info;
-        audioProcess.EnableRaisingEvents = false;
-        audioProcess.Start();
-
-        // stdout = new BinaryReader(audioProcess.StandardOutput.BaseStream);
+        // stdout = new BinaryReader(fileStream);  //new BinaryReader(audioProcess.StandardOutput.BaseStream);
 
         // audioFetchThread = new Thread(new ThreadStart(AudioFetchUpdate));
         // audioFetchThread.Priority = System.Threading.ThreadPriority.Highest;
@@ -88,7 +75,7 @@ public class SoundStreamReceiver
         // audioPlayThread.Priority = System.Threading.ThreadPriority.Highest;
         // audioPlayThread.Start();
 
-        // WaveOut.InitWODevice(44100, 2, 16, false);
+        // woLibObject.InitWODevice(44100, 2, 16, false);
     }
 
     public void AudioFetchUpdate()
@@ -131,43 +118,48 @@ public class SoundStreamReceiver
             fixed (byte* p = newData)
             {
                 IntPtr pPCM = (IntPtr)p;
-                WaveOut.SendWODevice(pPCM, (uint)bytesRead);
+                woLibObject.SendWODevice(pPCM, (uint)bytesRead);
             }
 
             audioPresent = false;
         }
     }
 
-    void ErrorDataReceived(object sender, DataReceivedEventArgs e)
-    {
-        UnityEngine.Debug.Log("error " + e.Data);
-    }
+    // void ErrorDataReceived(object sender, DataReceivedEventArgs e)
+    // {
+    //     UnityEngine.Debug.Log("error " + e.Data);
+    // }
 
-    void ProcessOutputDataReceived(object sender, DataReceivedEventArgs e)
-    {
-        UnityEngine.Debug.Log(e.Data);
-    }
-    void ProcessExited(object sender, EventArgs e)
-    {
-        UnityEngine.Debug.Log("exited");
-    }
+    // void ProcessOutputDataReceived(object sender, DataReceivedEventArgs e)
+    // {
+    //     UnityEngine.Debug.Log(e.Data);
+    // }
+    // void ProcessExited(object sender, EventArgs e)
+    // {
+    //     UnityEngine.Debug.Log("exited");
+    // }
 
-    void ProcessDisposed(object sender, EventArgs e)
-    {
-        UnityEngine.Debug.Log("disposed");
-    }
+    // void ProcessDisposed(object sender, EventArgs e)
+    // {
+    //     UnityEngine.Debug.Log("disposed");
+    // }
 
     public void Destroy()
     {
-        WaveOut.Dispose();
+        // UnityEngine.Debug.Log("YOYOYO");
 
-        if (audioFetchThread != null)
-            audioFetchThread.Abort();
+        // woLibObject.ResetWODevice();
+        woLibObject.CloseWODevice();
 
-        if (audioPlayThread != null)
-            audioPlayThread.Abort();
+        // woLibObject.Dispose();
 
-        if (audioProcess != null)
-            audioProcess.Kill();
+        // if (audioFetchThread != null)
+        //     audioFetchThread.Abort();
+
+        // if (audioPlayThread != null)
+        //     audioPlayThread.Abort();
+
+        // if (audioProcess != null)
+        //     audioProcess.Kill();
     }
 }

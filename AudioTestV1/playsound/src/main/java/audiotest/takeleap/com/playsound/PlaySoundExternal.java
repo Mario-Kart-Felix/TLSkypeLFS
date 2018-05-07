@@ -21,6 +21,7 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
@@ -84,8 +85,6 @@ public class PlaySoundExternal {
             //open your camera here
 
             Log.d(TAG, "OH NO " + textureView.getWidth()  + " " +  textureView.getRight() + " " + textureView.getLeft() + " " + textureView.getTop() + " " + textureView.getBottom());
-
-            openCamera();
         }
 
         @Override
@@ -113,25 +112,7 @@ public class PlaySoundExternal {
             cameraDevice = camera;
             createCameraPreview();
 
-            new Thread(new Runnable() {
-                public void run() {
-
-                    while (true) {
-
-                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                        textureView.getBitmap().compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-                        byte[] byteArray = byteArrayOutputStream.toByteArray();
-
-//                       Log.d(TAG, "Video Output " + byteArray.length);
-
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }).start();
+            Log.d(TAG, "55555");
         }
 
         @Override
@@ -173,8 +154,16 @@ public class PlaySoundExternal {
         Log.e(TAG, "createCameraPreview");
 
         try {
+            textureView = new TextureView(ourContext);
+            textureView.setLeft(0);   textureView.setRight(1280);
+            textureView.setTop(0);   textureView.setBottom(720);
+            SurfaceTexture mSurface = new SurfaceTexture(0);
+            mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
+            textureView.setSurfaceTexture(mSurface);
+            textureView.setSurfaceTextureListener(textureListener);
+
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
 
             Surface surface = new Surface(texture);
             List surfaces = new ArrayList<>();
@@ -183,87 +172,27 @@ public class PlaySoundExternal {
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             captureRequestBuilder.addTarget(surface);
 
-            Surface readerSurface = imageReader.getSurface();
+            Surface readerSurface = mMediaRecorder.getSurface();
             surfaces.add(readerSurface);
             captureRequestBuilder.addTarget(readerSurface);
 
             cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    //The camera is already closed
-                    if (null == cameraDevice) {
-                        return;
-                    }
-                    // When the session is ready, we start displaying the preview.
+
                     cameraCaptureSessions = cameraCaptureSession;
                     updatePreview();
+
+                    mMediaRecorder.start();
                 }
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    Log.e(TAG, "onConfigureFailed");
-//                    Toast.makeText(AndroidCameraApi.this, "Configuration change", Toast.LENGTH_SHORT).show();
+//                    Activity activity = getActivity();
+                    Log.d(TAG, "onConfigureFailed");
                 }
             }, mBackgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void openCamera() {
-
-        CameraManager manager = (CameraManager) ourContext.getSystemService(Context.CAMERA_SERVICE);
-        Log.e(TAG, "openCamera");
-        try {
-            cameraId = manager.getCameraIdList()[0];
-
-            Log.e(TAG, "Camera ID " + cameraId);
-
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            imageDimension = map.getOutputSizes(ImageReader.class)[0];
-            imageReader = ImageReader.newInstance(  imageDimension.getWidth(),
-                    imageDimension.getHeight(),
-                    ImageFormat.YUV_420_888, 30);
-
-            ImageReader.OnImageAvailableListener mImageAvailable = new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader)
-                {
-                    Image image = reader.acquireLatestImage();
-                    if (image == null)
-                        return;
-
-
-//                    // RowStride of planes may differ from width set to image reader, depends
-//                    // on device and camera hardware, for example on Nexus 6P the rowStride is
-//                    // 384 and the image width is 352.
-                    final Image.Plane[] planes = image.getPlanes();
-                    ByteBuffer byteBuffer = planes[0].getBuffer();
-                    Log.d(TAG, "Image Available " + byteBuffer.get(400));
-
-//                    final int total = planes[0].getRowStride() * mHeight;
-//                    if (mRgbBuffer == null || mRgbBuffer.length < total)
-//                        mRgbBuffer = new int[total];
-//
-//                    getRGBIntFromPlanes(planes);
-
-                    image.close();
-                }
-            };
-
-            imageReader.setOnImageAvailableListener(mImageAvailable, mBackgroundHandler);
-
-            Log.e(TAG, "Image Dimension " + imageDimension.getWidth() + " " + imageDimension.getHeight());
-
-            // Add permission for camera and let user grant the permission
-//            if (ActivityCompat.checkSelfPermission(ourContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(ourContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-//                ActivityCompat.requestPermissions(ourContext, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-//                return;
-//            }
-
-//            manager.openCamera(cameraId, stateCallback, null);
-
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -296,6 +225,10 @@ public class PlaySoundExternal {
     }
 
     private HandlerThread mBackgroundThread;
+
+    private MediaRecorder mMediaRecorder;
+    private Size mPreviewSize;
+    private Size mVideoSize;
 
     public static int TestPlugin()
     {
@@ -412,16 +345,18 @@ public class PlaySoundExternal {
 
     public InputStream  GetSendVideoProcessInputStream()
     {
-        if(videoaudioSendProcess == null)
+        if(ourvideoReceiveProcess == null)
             return  null;
 
-        return videoaudioSendProcess.getInputStream();
+        return ourvideoReceiveProcess.getInputStream();
     }
 
     Process videoReceiveProcess;
     Process audioReceiveProcess;
 
     Process videoaudioSendProcess;
+
+    Process ourvideoReceiveProcess;
 
     ParcelFileDescriptor[] fdPair;
 
@@ -438,10 +373,15 @@ public class PlaySoundExternal {
 
         if(videoaudioSendProcess != null)
             videoaudioSendProcess.destroy();
+
+        if(ourvideoReceiveProcess != null)
+            ourvideoReceiveProcess.destroy();
     }
 
     public void RequestRequiredPermissions(Context context, Activity currentActivity)
     {
+        ourContext = context;
+
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
@@ -452,8 +392,69 @@ public class PlaySoundExternal {
         }
     }
 
+    private static Size chooseVideoSize(Size[] choices) {
+
+        return  new Size(1280, 720);
+
+//        for (Size size : choices) {
+//            Log.d(TAG, "V " +  size.getWidth() + " " + size.getHeight());
+//
+//            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
+//                return size;
+//            }
+//        }
+//        Log.e(TAG, "Couldn't find any suitable video size");
+//        return choices[choices.length - 1];
+    }
+
+    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
+
+        return  new Size(1280, 720);
+
+        // Collect the supported resolutions that are at least as big as the preview Surface
+//        List<Size> bigEnough = new ArrayList<>();
+//        int w = aspectRatio.getWidth();
+//        int h = aspectRatio.getHeight();
+//        for (Size option : choices) {
+//            Log.d(TAG, "P " +  option.getWidth() + " " + option.getHeight());
+//            if (option.getHeight() == option.getWidth() * h / w &&
+//                    option.getWidth() >= width && option.getHeight() >= height) {
+//                bigEnough.add(option);
+//            }
+//        }
+//
+//        // Pick the smallest of those, assuming we found any
+//        if (bigEnough.size() > 0) {
+//            return Collections.min(bigEnough, new CompareSizesByArea());
+//        } else {
+//            Log.e(TAG, "Couldn't find any suitable preview size");
+//            return choices[0];
+//        }
+    }
+
+    protected void startBackgroundThread() {
+        mBackgroundThread = new HandlerThread("Camera Background");
+        mBackgroundThread.start();
+        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+    }
+
+    protected void stopBackgroundThread() {
+        mBackgroundThread.quitSafely();
+        try {
+            mBackgroundThread.join();
+            mBackgroundThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void SendVideoAudioProcess(int caller, Context context)
     {
+        startBackgroundThread();
+
+        ourContext = context;
+
         fdPair = new ParcelFileDescriptor[0];
         try {
             fdPair = ParcelFileDescriptor.createPipe();
@@ -553,13 +554,114 @@ public class PlaySoundExternal {
 
                 } catch (IOException e) {
                     e.printStackTrace();
-
-//                    onDestroy();
                 }
             }
         };
 
         readerThread.start();
+
+        CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        try {
+            cameraId = manager.getCameraIdList()[0];
+
+            Log.d(TAG, "Camera ID " + cameraId);
+
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            imageDimension = map.getOutputSizes(ImageReader.class)[0];
+
+            mVideoSize = new Size(1280, 720); //chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            mPreviewSize = new Size(1280, 720); //chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                   // textureView.getWidth(), textureView.getHeight(), mVideoSize);
+
+            mMediaRecorder = new MediaRecorder();
+            mMediaRecorder.reset();
+
+            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+
+            mMediaRecorder.setOutputFormat(8);
+
+            Log.d(TAG, "56534");
+
+            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
+            mMediaRecorder.setVideoEncodingBitRate(4500);
+            mMediaRecorder.setVideoFrameRate(30);
+            mMediaRecorder.setVideoSize(640, 480);
+            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+            mMediaRecorder.prepare();
+
+            try
+            {
+                Log.d(TAG, "Calling openCamera");
+                manager.openCamera(cameraId, stateCallback, mBackgroundHandler);
+            }
+            catch (SecurityException e)
+            {
+                Log.d(TAG, "YES CAMERA PERMISSION " + e.getMessage());
+            }
+            catch (Exception e)
+            {
+                Log.d(TAG, "GENERAL " + e.getMessage());
+            }
+
+            Log.d(TAG, "4444");
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void OurReceiveVideoProcess(int caller, Context context)
+    {
+        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
+
+        if(ffmpegFile.exists())
+        {
+            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
+        }
+        else
+        {
+            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
+
+            AssetManager assetManager = context.getAssets();
+            InputStream in = null;
+            OutputStream out = null;
+            try
+            {
+                in = assetManager.open("ffmpeg");
+                ffmpegFile.createNewFile();
+                ffmpegFile.setExecutable(true);
+                out = new FileOutputStream(ffmpegFile);
+                copyFile(in, out);
+                in.close();
+                out.close();
+            }
+            catch (IOException e)
+            {
+                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
+            }
+        }
+
+        if(!ffmpegFile.exists())
+        {
+            return;
+        }
+
+        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
+
+        String input = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (caller == 1 ? "/caller" : "/receiver") +
+                " -f image2pipe -vcodec mjpeg -";
+        String[] cmds = input.split(" ");
+        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
+        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
+
+        ourvideoReceiveProcess = shellCommandCustom.run(command);
     }
 
     public void ReceiveVideoAudioProcess(int caller, Context context)
@@ -636,7 +738,7 @@ public class PlaySoundExternal {
 //        }).start();
 
         input = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (caller == 1 ? "/receiver" : "/caller") +
-                " -f image2pipe -vcodec mjpeg -";;
+                " -f image2pipe -vcodec mjpeg -";
         cmds = input.split(" ");
         command = (String[]) this.concatenate(ffmpegBinary, cmds);
 

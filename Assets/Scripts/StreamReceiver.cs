@@ -89,11 +89,11 @@ public class StreamReceiver
 
         IntPtr currentActivityPtr = AndroidJNI.GetStaticObjectField(unityClass.GetRawClass(), AndroidJNI.GetStaticFieldID(unityClass.GetRawClass(), "currentActivity", "Landroid/app/Activity;"));
 
-        AndroidJNI.CallVoidMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "RunProcess",
+        AndroidJNI.CallVoidMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "ReceiveVideoAudioProcess",
                                                                 "(ILandroid/content/Context;)V"),
                                                                 new jvalue[] { new jvalue() { i = SkypeManager.Instance.isCaller ? 1 : 2 }, new jvalue() { l = currentActivityPtr } });
 
-        IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "GetVideoProcessInputStream",
+        IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "GetReceiveVideoProcessInputStream",
                                                                 "()Ljava/io/InputStream;"),
                                                                 new jvalue[] { });
 
@@ -110,6 +110,8 @@ public class StreamReceiver
             newData = AndroidJNIHelper.ConvertFromJNIArray<byte[]>(numsPtr);
 
             int index = SearchBytePatternAndroid();
+
+            Debug.Log("BBB " + bytesRead + " " + index);
 
             if (index != -1)
             {

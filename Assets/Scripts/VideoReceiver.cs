@@ -45,45 +45,10 @@ public class VideoReceiver : MonoBehaviour
         }
     }
 
-    unsafe void ReceiveVideoStream_Android()
+    void ReceiveVideoStream_Android()
     {
         streamReceiver = new StreamReceiver(null, receiverImage, textureSize, false);
         streamReceiver.StartReceivingStream();
-
-        return;
-
-        string strName = "audiotest/takeleap/com/playsound/PlaySoundExternal";
-        IntPtr localRefPtr = AndroidJNI.FindClass(strName);
-
-        IntPtr unityClassPtr = AndroidJNI.FindClass("com/unity3d/player/UnityPlayer");
-        IntPtr inputStreamClassPtr = AndroidJNI.FindClass("java/io/InputStream");
-
-        if (localRefPtr != IntPtr.Zero)
-        {
-            print("NOT NULL");
-
-            IntPtr instancePtr = AndroidJNI.CallStaticObjectMethod(localRefPtr, AndroidJNI.GetStaticMethodID(localRefPtr, "instance",
-                                                                    "()Laudiotest/takeleap/com/playsound/PlaySoundExternal;"), new jvalue[] { });
-
-            if (instancePtr != null)
-            {
-                print("Instance PTR NOT NULL BRO");
-            }
-            else
-            {
-                print("Instance PTR NULL BRO");
-            }
-
-            // IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(localRefPtr, "TestPluginArrayNonStatic",
-            //                                                         "()[B"),
-            //                                                         new jvalue[] { });
-
-            // byte[] num = new byte[100];
-
-            // Marshal.Copy(inputStreamPtr, num, 0, 100);
-
-            // print(num[22] + " " + num[73]);
-        }
     }
 
     void ReceiveVideoStream()
@@ -116,8 +81,8 @@ public class VideoReceiver : MonoBehaviour
         streamReceiver = new StreamReceiver(receiveProcess.StandardOutput, receiverImage, textureSize);
         streamReceiver.StartReceivingStream();
 
-        // soundStreamReceiver = new SoundStreamReceiver();
-        // soundStreamReceiver.StartReceivingAudio();
+        soundStreamReceiver = new SoundStreamReceiver();
+        soundStreamReceiver.StartReceivingAudio();
     }
 
     void ErrorDataReceived(object sender, DataReceivedEventArgs e)

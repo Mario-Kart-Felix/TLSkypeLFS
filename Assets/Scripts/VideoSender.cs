@@ -30,6 +30,8 @@ public class VideoSender : MonoBehaviour
 
     private StreamReceiver streamReceiver;
 
+    private StreamSender streamSender;
+
     public void StartVideoSender()
     {
         Application.runInBackground = true;
@@ -80,7 +82,8 @@ public class VideoSender : MonoBehaviour
 
     void SendVideo_Android()
     {
-        
+        streamSender = new StreamSender(null, senderImage, textureSize);
+        streamSender.StartSendingStream();
     }
 
     void ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -107,6 +110,9 @@ public class VideoSender : MonoBehaviour
         if (streamReceiver != null)
             streamReceiver.AbortThread();
 
+        if (streamSender != null)
+            streamSender.AbortThread();
+
         if (senderProcess != null)
             senderProcess.Kill();
 
@@ -117,8 +123,9 @@ public class VideoSender : MonoBehaviour
     void OnPreRender()
     {
         if (streamReceiver != null)
-        {
             streamReceiver.DrawFrame();
-        }
+
+        if (streamSender != null)
+            streamSender.DrawFrame();
     }
 }
