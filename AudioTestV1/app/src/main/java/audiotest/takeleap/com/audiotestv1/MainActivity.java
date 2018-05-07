@@ -277,8 +277,6 @@ public class MainActivity extends AppCompatActivity {
 
         playSoundExternal.RequestRequiredPermissions(this.getApplicationContext(), this);
         playSoundExternal.SendVideoAudioProcess(1, this.getApplicationContext());
-
-//        CameraOpen();
     }
 
     public  void CameraOpen()

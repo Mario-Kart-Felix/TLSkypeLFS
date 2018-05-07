@@ -32,7 +32,9 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -335,28 +337,17 @@ public class PlaySoundExternal {
         return  numBytesReadLastVideo;
     }
 
-    public InputStream  GetReceiveVideoProcessInputStream()
-    {
-       if(videoReceiveProcess == null)
-           return  null;
-
-       return videoReceiveProcess.getInputStream();
-    }
-
     public InputStream  GetSendVideoProcessInputStream()
     {
-        if(ourvideoReceiveProcess == null)
+        if(ourvideoaudioSendProcess == null)
             return  null;
 
-        return ourvideoReceiveProcess.getInputStream();
+        return ourvideoaudioSendProcess.getInputStream();
     }
-
-    Process videoReceiveProcess;
-    Process audioReceiveProcess;
 
     Process videoaudioSendProcess;
 
-    Process ourvideoReceiveProcess;
+    Process ourvideoaudioSendProcess;
 
     ParcelFileDescriptor[] fdPair;
 
@@ -365,28 +356,19 @@ public class PlaySoundExternal {
 
     public  void CloseAllProcess()
     {
-        if(videoReceiveProcess != null)
-            videoReceiveProcess.destroy();
-
-        if(audioReceiveProcess != null)
-            audioReceiveProcess.destroy();
-
         if(videoaudioSendProcess != null)
             videoaudioSendProcess.destroy();
-
-        if(ourvideoReceiveProcess != null)
-            ourvideoReceiveProcess.destroy();
     }
 
     public void RequestRequiredPermissions(Context context, Activity currentActivity)
     {
         ourContext = context;
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(context, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED)
+//        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(context, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED)
         {
             ActivityCompat.requestPermissions(currentActivity, new String[]{Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.INTERNET}, REQUEST_CAMERA_PERMISSION);
         }
@@ -449,6 +431,9 @@ public class PlaySoundExternal {
         }
     }
 
+    byte[] buffer = new byte[8192];
+    int read = 0;
+
     public void SendVideoAudioProcess(int caller, Context context)
     {
         startBackgroundThread();
@@ -501,13 +486,21 @@ public class PlaySoundExternal {
 
         ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
 
-        String input =  "-y -re -i -" + " -strict -2 -codec:v copy -codec:a aac -b:a 128k -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live/" +
-                        (caller == 1 ? "caller" : "receiver");
+        String input =  "-y -re -i -" + " -codec:v copy -codec:a aac -b:a 128k"
+                + " -f flv rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live/" + (caller == 1 ? "caller" : "receiver");
+
         String[] cmds = input.split(" ");
         String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
         String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
         videoaudioSendProcess = shellCommandCustom.run(command);
+
+        input =  "-y -re -i -" + " -codec:v copy -codec:a aac -b:a 128k"
+                + " -f image2pipe -c:v mjpeg -";
+
+        cmds = input.split(" ");
+        ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
+        command = (String[]) this.concatenate(ffmpegBinary, cmds);
+        ourvideoaudioSendProcess = shellCommandCustom.run(command);
 
         new Thread(new Runnable() {
             public void run() {
@@ -515,7 +508,7 @@ public class PlaySoundExternal {
                     String line;
                     BufferedReader reader = new BufferedReader(new InputStreamReader(videoaudioSendProcess.getErrorStream()));
                     while ((line = reader.readLine()) != null) {
-                        Log.d(TAG, line);
+                        Log.d(TAG, "ERROR " + line);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -525,14 +518,12 @@ public class PlaySoundExternal {
 
         final ParcelFileDescriptor finalreadFD = readFD;
 
-        Thread readerThread = new Thread() {
+        Thread writerThreadSending = new Thread() {
             @Override
             public void run() {
 
-                byte[] buffer = new byte[8192];
-                int read = 0;
-
                 OutputStream ffmpegInput = videoaudioSendProcess.getOutputStream();
+                OutputStream ffmpegInputOur = ourvideoaudioSendProcess.getOutputStream();
 
                 final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
 
@@ -543,10 +534,10 @@ public class PlaySoundExternal {
                         if (reader.available()>0) {
                             read = reader.read(buffer);
                             ffmpegInput.write(buffer, 0, read);
+                            ffmpegInputOur.write(buffer, 0, read);
                         } else {
-                            sleep(10);
+                            sleep(1);
                         }
-
                     }
 
                 } catch (InterruptedException e) {
@@ -557,8 +548,36 @@ public class PlaySoundExternal {
                 }
             }
         };
+        writerThreadSending.start();
 
-        readerThread.start();
+//        Thread ourwriterThreadSending = new Thread() {
+//            @Override
+//            public void run() {
+//
+//                InputStream ffmpegInput = ourvideoaudioSendProcess.getInputStream();
+//
+//                try {
+//
+//                    while (true) {
+//
+//                        if (ffmpegInput.available()>0) {
+//                            read = ffmpegInput.read(buffer);
+//
+//                            Log.d(TAG, "" + buffer[1234]);
+//                        } else {
+//                            sleep(1);
+//                        }
+//                    }
+//
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        ourwriterThreadSending.start();
 
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -615,145 +634,6 @@ public class PlaySoundExternal {
         catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void OurReceiveVideoProcess(int caller, Context context)
-    {
-        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
-
-        if(ffmpegFile.exists())
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
-        }
-        else
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
-
-            AssetManager assetManager = context.getAssets();
-            InputStream in = null;
-            OutputStream out = null;
-            try
-            {
-                in = assetManager.open("ffmpeg");
-                ffmpegFile.createNewFile();
-                ffmpegFile.setExecutable(true);
-                out = new FileOutputStream(ffmpegFile);
-                copyFile(in, out);
-                in.close();
-                out.close();
-            }
-            catch (IOException e)
-            {
-                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
-            }
-        }
-
-        if(!ffmpegFile.exists())
-        {
-            return;
-        }
-
-        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
-
-        String input = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (caller == 1 ? "/caller" : "/receiver") +
-                " -f image2pipe -vcodec mjpeg -";
-        String[] cmds = input.split(" ");
-        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
-        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        ourvideoReceiveProcess = shellCommandCustom.run(command);
-    }
-
-    public void ReceiveVideoAudioProcess(int caller, Context context)
-    {
-        File ffmpegFile = new File(  context.getFilesDir() + File.separator + "ffmpeg");
-
-        if(ffmpegFile.exists())
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG EXISTS");
-        }
-        else
-        {
-            Log.d("STREAM_AUDIO", "FFMPEG NOT THERE, CREATING " + ffmpegFile.getAbsolutePath());
-
-            AssetManager assetManager = context.getAssets();
-            InputStream in = null;
-            OutputStream out = null;
-            try
-            {
-                in = assetManager.open("ffmpeg");
-                ffmpegFile.createNewFile();
-                ffmpegFile.setExecutable(true);
-                out = new FileOutputStream(ffmpegFile);
-                copyFile(in, out);
-                in.close();
-                out.close();
-            }
-            catch (IOException e)
-            {
-                Log.e("STREAM_AUDIO", "Failed to copy asset file: " + "ffmpeg", e);
-            }
-        }
-
-        if(!ffmpegFile.exists())
-        {
-            return;
-        }
-
-        ShellCommandCustom shellCommandCustom = new ShellCommandCustom();
-
-        String input = "-y -i rtsp://13.126.154.86:5454/" + (caller == 1 ? "callerAudio.mp3" : "callerAudio.mp3") + " -f wav -";
-        String[] cmds = input.split(" ");
-        String[] ffmpegBinary = new String[]{FileUtilsCustom.getFFmpeg(context, null)};
-        String[] command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        audioReceiveProcess = shellCommandCustom.run(command);
-//
-//        new Thread(new Runnable() {
-//            public void run() {
-//
-//                InitSound();
-//
-//                InputStream inputStream = audioReceiveProcess.getInputStream();
-//
-//                while (true) {
-//
-//                    try {
-//
-//                        numBytesReadLastAudio = inputStream.read(audioBuffer);
-//
-//                        SendData(audioBuffer, numBytesReadLastAudio);
-//
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    try {
-//                        Thread.sleep(1);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
-
-        input = "-y -i rtmp://ec2-13-126-154-86.ap-south-1.compute.amazonaws.com/live" + (caller == 1 ? "/receiver" : "/caller") +
-                " -f image2pipe -vcodec mjpeg -";
-        cmds = input.split(" ");
-        command = (String[]) this.concatenate(ffmpegBinary, cmds);
-
-        videoReceiveProcess = shellCommandCustom.run(command);
-    }
-
-    public void InitSound()
-    {
-        int outputBufferSize = AudioTrack.getMinBufferSize(44100,
-                AudioFormat.CHANNEL_IN_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT);
-
-        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, outputBufferSize, AudioTrack.MODE_STREAM);
-
-        audioTrack.play();
     }
 
     public void SendData(byte[] data, int length)

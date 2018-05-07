@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System;
-using FFmpegOut;
 using UnityEngine.UI;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -78,10 +77,6 @@ public class StreamSender
         AndroidJNI.CallVoidMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "SendVideoAudioProcess",
                                                                 "(ILandroid/content/Context;)V"),
                                                                 new jvalue[] { new jvalue() { i = SkypeManager.Instance.isCaller ? 1 : 2 }, new jvalue() { l = currentActivityPtr } });
-
-        AndroidJNI.CallVoidMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "OurReceiveVideoProcess",
-                                                                  "(ILandroid/content/Context;)V"),
-                                                                  new jvalue[] { new jvalue() { i = SkypeManager.Instance.isCaller ? 1 : 2 }, new jvalue() { l = currentActivityPtr } });
 
         IntPtr inputStreamPtr = AndroidJNI.CallObjectMethod(instancePtr, AndroidJNI.GetMethodID(pluginClass.GetRawClass(), "GetSendVideoProcessInputStream",
                                                                 "()Ljava/io/InputStream;"),

@@ -9,8 +9,5 @@ EditorBuildSettings:
     path: Assets/Scenes/skypetest.unity
     guid: 92548e60b27cb2242b216732e7a5a66c
   - enabled: 0
-    path: Assets/FFmpeg/FFmpegDemo/FFmpegDemo.unity
-    guid: 042171e577ff27c4aaa1dd2bf0a05748
-  - enabled: 0
-    path: Assets/Scenes/pluginTest.unity
-    guid: 6b01a6901d1f18842b7c83d3fa07dc27
+    path: Assets/UniversalMediaPlayer/Scenes/AudioSourceExample.unity
+    guid: d1047d113c607564e8ad2a56af9c84e1
