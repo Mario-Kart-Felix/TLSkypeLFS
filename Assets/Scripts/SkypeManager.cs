@@ -42,6 +42,20 @@ public class SkypeManager : MonoBehaviour
 
     void Start()
     {
+        Application.OpenURL("file://" + WWW.EscapeURL(Application.persistentDataPath) + "/Document.pdf");
+        print(Application.persistentDataPath);
+
+        if(File.Exists("/mnt/sdcard/ReceivedFiles/Document.pdf"))
+        {
+            print("File exists da");
+
+            Application.OpenURL("file://mnt/sdcard/ReceivedFiles/Document.pdf");
+        }
+        else
+        {
+            print("Not found");
+        }
+
         mainCanvas.SetActive(false);
         buttonCanvas.SetActive(true);
 
@@ -79,14 +93,14 @@ public class SkypeManager : MonoBehaviour
     {
         string myFilePath = filestoSend[0];
         string[] splitNames = myFilePath.Split(new char[] { '\\' });
-        string serverPath = "ftp://185.27.134.11/htdocs/Unity test/" + splitNames[splitNames.Length - 1];
+        string serverPath = "ftp://123.176.34.172/" + splitNames[splitNames.Length - 1];
 
         filestoSend.RemoveAt(0);
 
         FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverPath);
         request.Method = WebRequestMethods.Ftp.UploadFile;
 
-        request.Credentials = new NetworkCredential("b31_21594044", "Password");
+        request.Credentials = new NetworkCredential("maxi", "asdfghjk");
         StreamReader sourceStream = new StreamReader(myFilePath);
         // print(Application.persistentDataPath + "/" + myFilePath + " ftp location file");
 
@@ -110,7 +124,7 @@ public class SkypeManager : MonoBehaviour
         receivedFilesObject.SetActive(false);
 
         WebClient client = new WebClient();
-        client.Credentials = new NetworkCredential("b31_21594044", "Password");
+        client.Credentials = new NetworkCredential("maxi", "asdfghjk");
 
         client.DownloadFile(receivedFileFullName, receivedfilesDirPath + "/" + receivedFileName);
 
