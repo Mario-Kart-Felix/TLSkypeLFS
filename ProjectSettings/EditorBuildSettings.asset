@@ -5,9 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/skypetest.unity
     guid: 92548e60b27cb2242b216732e7a5a66c
   - enabled: 0
     path: Assets/UniversalMediaPlayer/Scenes/AudioSourceExample.unity
     guid: d1047d113c607564e8ad2a56af9c84e1
+  - enabled: 1
+    path: Assets/Scenes/TestScenes/FileOpenTest.unity
+    guid: 2a1d1ae9ffc0e624e90cbd900e8b9392

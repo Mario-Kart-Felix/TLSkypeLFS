@@ -106,6 +106,11 @@ public class VideoSender : MonoBehaviour
 
     void OnDestroy()
     {
+        StopStream();
+    }
+
+    public void StopStream ()
+    {
         if (streamReceiver != null)
             streamReceiver.AbortThread();
 
@@ -119,7 +124,7 @@ public class VideoSender : MonoBehaviour
             waveOutTestProcess.Kill();
     }
 
-    void OnPreRender()
+    void Update()
     {
         if (streamReceiver != null)
             streamReceiver.DrawFrame();

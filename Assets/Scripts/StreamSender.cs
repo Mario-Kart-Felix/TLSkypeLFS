@@ -96,7 +96,7 @@ public class StreamSender
 
             int index = SearchBytePatternAndroid();
 
-			Debug.Log("NNN " + bytesRead + " " + index);
+			// Debug.Log("NNN " + bytesRead + " " + index);
 
             if (index != -1)
             {
@@ -148,6 +148,7 @@ public class StreamSender
 
     public void DrawFrame()
     {
+        Debug.Log(data);
         if (data != null)
         {
             targetTexture.LoadImage(data);

@@ -33,6 +33,7 @@ public class SkypeManager : MonoBehaviour
     public Text downloadedNotificationText;
 
     public string receivedfilesDirPath = "";
+    public DownloadAssist   downloadAssist;
 
     void Awake()
     {
@@ -42,6 +43,20 @@ public class SkypeManager : MonoBehaviour
 
     void Start()
     {
+        // Application.OpenURL("file://" + WWW.EscapeURL(Application.persistentDataPath) + "/Document.pdf");
+        // print(Application.persistentDataPath);
+
+        // if(File.Exists("/mnt/sdcard/ReceivedFiles/Document.pdf"))
+        // {
+        //     print("File exists da");
+
+        //     Application.OpenURL("file://mnt/sdcard/ReceivedFiles/Document.pdf");
+        // }
+        // else
+        // {
+        //     print("Not found");
+        // }
+
         mainCanvas.SetActive(false);
         buttonCanvas.SetActive(true);
 
@@ -68,6 +83,7 @@ public class SkypeManager : MonoBehaviour
     {
         Thread fileDownloadThread = new Thread(FileDownloadThreadFunction);
         fileDownloadThread.Start();
+        // FileDownloadThreadFunction();
     }
 
     void HideDownloadedNotificationText()
@@ -79,14 +95,14 @@ public class SkypeManager : MonoBehaviour
     {
         string myFilePath = filestoSend[0];
         string[] splitNames = myFilePath.Split(new char[] { '\\' });
-        string serverPath = "ftp://185.27.134.11/htdocs/Unity test/" + splitNames[splitNames.Length - 1];
+        string serverPath = "ftp://123.176.34.172/" + splitNames[splitNames.Length - 1];
 
         filestoSend.RemoveAt(0);
 
         FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverPath);
         request.Method = WebRequestMethods.Ftp.UploadFile;
 
-        request.Credentials = new NetworkCredential("b31_21594044", "Password");
+        request.Credentials = new NetworkCredential("maxi", "asdfghjk");
         StreamReader sourceStream = new StreamReader(myFilePath);
         // print(Application.persistentDataPath + "/" + myFilePath + " ftp location file");
 
@@ -107,18 +123,12 @@ public class SkypeManager : MonoBehaviour
 
     void FileDownloadThreadFunction()
     {
-        receivedFilesObject.SetActive(false);
+        // receivedFilesObject.SetActive(false);
 
         WebClient client = new WebClient();
-        client.Credentials = new NetworkCredential("b31_21594044", "Password");
+        client.Credentials = new NetworkCredential("maxi", "asdfghjk");
 
         client.DownloadFile(receivedFileFullName, receivedfilesDirPath + "/" + receivedFileName);
-
-        downloadedNotificationText.gameObject.SetActive(true);
-        downloadedNotificationText.text = "Downloaded File " + receivedFileName;
-
-        CancelInvoke("HideDownloadedNotificationText");
-        Invoke("HideDownloadedNotificationText", 5f);
     }
 
     IEnumerator FileUploader()
@@ -146,6 +156,9 @@ public class SkypeManager : MonoBehaviour
         string[] splitNames = fullFileName.Split(new char[] { '/' });
         receivedFileName = splitNames[splitNames.Length - 1];
         receivedFileNameText.text = receivedFileName;
+        receivedFileNameText.text = (Int32.Parse(receivedFileNameText.text) + 1).ToString();
+
+        downloadAssist.SpawnDownload(receivedFileName, receivedFileFullName);
     }
 
     void OnDestroy()
@@ -161,7 +174,7 @@ public class SkypeManager : MonoBehaviour
         mainCanvas.SetActive(true);
 
         videoSender.StartVideoSender();
-        videoReceiver.StartVideoReceiver();
+        // videoReceiver.StartVideoReceiver();
     }
 
     public void SendFile(string fullFileName)
