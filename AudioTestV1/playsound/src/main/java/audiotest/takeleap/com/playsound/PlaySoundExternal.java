@@ -22,7 +22,6 @@ import android.media.AudioTrack;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
@@ -114,6 +113,8 @@ public class PlaySoundExternal {
             Log.e(TAG, "onOpened");
             cameraDevice = camera;
             createCameraPreview();
+
+            Log.d(TAG, "55555");
         }
 
         @Override
@@ -156,15 +157,15 @@ public class PlaySoundExternal {
 
         try {
             textureView = new TextureView(ourContext);
-            textureView.setLeft(0);   textureView.setRight(mVideoSize.getWidth());
-            textureView.setTop(0);   textureView.setBottom(mVideoSize.getHeight());
+            textureView.setLeft(0);   textureView.setRight(1280);
+            textureView.setTop(0);   textureView.setBottom(720);
             SurfaceTexture mSurface = new SurfaceTexture(0);
             mSurface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
             textureView.setSurfaceTexture(mSurface);
             textureView.setSurfaceTextureListener(textureListener);
 
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
 
             Surface surface = new Surface(texture);
             List surfaces = new ArrayList<>();
@@ -375,15 +376,42 @@ public class PlaySoundExternal {
 
     private static Size chooseVideoSize(Size[] choices) {
 
-//        return  new Size(1280, 720);
+        return  new Size(1280, 720);
 
-        for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
-                return size;
-            }
-        }
-        Log.e(TAG, "Couldn't find any suitable video size");
-        return choices[choices.length - 1];
+//        for (Size size : choices) {
+//            Log.d(TAG, "V " +  size.getWidth() + " " + size.getHeight());
+//
+//            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
+//                return size;
+//            }
+//        }
+//        Log.e(TAG, "Couldn't find any suitable video size");
+//        return choices[choices.length - 1];
+    }
+
+    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
+
+        return  new Size(1280, 720);
+
+        // Collect the supported resolutions that are at least as big as the preview Surface
+//        List<Size> bigEnough = new ArrayList<>();
+//        int w = aspectRatio.getWidth();
+//        int h = aspectRatio.getHeight();
+//        for (Size option : choices) {
+//            Log.d(TAG, "P " +  option.getWidth() + " " + option.getHeight());
+//            if (option.getHeight() == option.getWidth() * h / w &&
+//                    option.getWidth() >= width && option.getHeight() >= height) {
+//                bigEnough.add(option);
+//            }
+//        }
+//
+//        // Pick the smallest of those, assuming we found any
+//        if (bigEnough.size() > 0) {
+//            return Collections.min(bigEnough, new CompareSizesByArea());
+//        } else {
+//            Log.e(TAG, "Couldn't find any suitable preview size");
+//            return choices[0];
+//        }
     }
 
     protected void startBackgroundThread() {
@@ -405,13 +433,6 @@ public class PlaySoundExternal {
 
     byte[] buffer = new byte[8192];
     int read = 0;
-    private String mNextVideoAbsolutePath;
-
-    private String getVideoFilePath() {
-        final File dir = ourContext.getExternalFilesDir(null);
-        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                 + "ourvideo.mp4";
-    }
 
     public void SendVideoAudioProcess(int caller, Context context)
     {
@@ -504,38 +525,59 @@ public class PlaySoundExternal {
                 OutputStream ffmpegInput = videoaudioSendProcess.getOutputStream();
                 OutputStream ffmpegInputOur = ourvideoaudioSendProcess.getOutputStream();
 
+                final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
+
                 try {
-                        final FileInputStream reader = new FileInputStream(finalreadFD.getFileDescriptor());
-
-//                    mNextVideoAbsolutePath = getVideoFilePath();
-//                    final FileInputStream reader = new FileInputStream(mNextVideoAbsolutePath);
-
-//                    Log.d(TAG, mNextVideoAbsolutePath);
 
                     while (true) {
 
-                        if (reader.available() > 0)
-                        {
+                        if (reader.available()>0) {
                             read = reader.read(buffer);
                             ffmpegInput.write(buffer, 0, read);
-//                            ffmpegInputOur.write(buffer, 0, read);
-                        }
-                        else {
+                            ffmpegInputOur.write(buffer, 0, read);
+                        } else {
                             sleep(1);
                         }
                     }
 
-                }
-                catch (InterruptedException e)
-                {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
-                }
-                catch (IOException e) {
+
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
         writerThreadSending.start();
+
+//        Thread ourwriterThreadSending = new Thread() {
+//            @Override
+//            public void run() {
+//
+//                InputStream ffmpegInput = ourvideoaudioSendProcess.getInputStream();
+//
+//                try {
+//
+//                    while (true) {
+//
+//                        if (ffmpegInput.available()>0) {
+//                            read = ffmpegInput.read(buffer);
+//
+//                            Log.d(TAG, "" + buffer[1234]);
+//                        } else {
+//                            sleep(1);
+//                        }
+//                    }
+//
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        ourwriterThreadSending.start();
 
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -547,22 +589,25 @@ public class PlaySoundExternal {
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             imageDimension = map.getOutputSizes(ImageReader.class)[0];
 
-            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            mVideoSize = new Size(1280, 720); //chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            mPreviewSize = new Size(1280, 720); //chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                   // textureView.getWidth(), textureView.getHeight(), mVideoSize);
 
             mMediaRecorder = new MediaRecorder();
             mMediaRecorder.reset();
 
             mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 
             mMediaRecorder.setOutputFormat(8);
 
-            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
+            Log.d(TAG, "56534");
 
-            mMediaRecorder.setVideoEncodingBitRate(14500);
+            mMediaRecorder.setOutputFile(writeFD.getFileDescriptor());
+            mMediaRecorder.setVideoEncodingBitRate(4500);
             mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            mMediaRecorder.setVideoSize(640, 480);
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
             mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
@@ -581,6 +626,8 @@ public class PlaySoundExternal {
             {
                 Log.d(TAG, "GENERAL " + e.getMessage());
             }
+
+            Log.d(TAG, "4444");
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

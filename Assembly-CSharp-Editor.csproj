@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{FB2A907D-4FB3-FCB4-CBF5-97F48333C65F}</ProjectGuid>
+    <ProjectGuid>{5725D95A-1970-8318-4569-DEE39FDFFEAF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp-Editor</AssemblyName>
@@ -133,28 +133,28 @@
  <HintPath>C:/Program Files/Unity 2017.3.1f1/Editor/Data/PlaybackEngines/windowsstandalonesupport/UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
  </Reference>
  <Reference Include="DOTween">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/DOTween/DOTween.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/DOTween/DOTween.dll</HintPath>
  </Reference>
  <Reference Include="DOTween43">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/DOTween/DOTween43.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/DOTween/DOTween43.dll</HintPath>
  </Reference>
  <Reference Include="DOTween46">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/DOTween/DOTween46.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/DOTween/DOTween46.dll</HintPath>
  </Reference>
  <Reference Include="DOTween50">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/DOTween/DOTween50.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/DOTween/DOTween50.dll</HintPath>
  </Reference>
  <Reference Include="DOTweenEditor">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/DOTween/Editor/DOTweenEditor.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/DOTween/Editor/DOTweenEditor.dll</HintPath>
  </Reference>
  <Reference Include="System.Drawing">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/Plugins/Windows/System.Drawing.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/Plugins/Windows/System.Drawing.dll</HintPath>
  </Reference>
  <Reference Include="System.Windows.Forms">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/Plugins/Windows/System.Windows.Forms.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/Plugins/Windows/System.Windows.Forms.dll</HintPath>
  </Reference>
  <Reference Include="MediaPlayer">
- <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkypeLFS/Assets/UniversalMediaPlayer/Plugins/MediaPlayer.dll</HintPath>
+ <HintPath>C:/Users/TakeLeap05/Desktop/Desktop 1/TLSkype/Assets/UniversalMediaPlayer/Plugins/MediaPlayer.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.Advertisements">
  <HintPath>C:/Users/TakeLeap05/AppData/LocalLow/Unity/cache/packages/packages.unity.com/com.unity.ads@2.0.3/UnityEngine.Advertisements.dll</HintPath>
@@ -180,7 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp.csproj">
-      <Project>{3DD90C37-516F-1775-958F-312AA8723815}</Project>      <Name>Assembly-CSharp</Name>    </ProjectReference>
+      <Project>{4B487C34-34C9-8579-FC6C-744E7DC52B61}</Project>      <Name>Assembly-CSharp</Name>    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
