@@ -1,1 +1,1 @@
-include ':app', ':openfile'
+include ':app', ':openfile', ':myapplication', ':openfilelibtest'
