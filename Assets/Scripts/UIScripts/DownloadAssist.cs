@@ -19,10 +19,10 @@ public class DownloadAssist : MonoBehaviour
 
 	void Start ()
 	{
-		if(!Directory.Exists(path))
-		{
-			Directory.CreateDirectory(path);
-		}
+		// if(!Directory.Exists(path))
+		// {
+		// 	Directory.CreateDirectory(path);
+		// }
 	}
 
 	public void ToggleButton ()

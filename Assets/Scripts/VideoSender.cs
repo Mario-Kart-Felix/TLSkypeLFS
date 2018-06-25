@@ -81,6 +81,8 @@ public class VideoSender : MonoBehaviour
 
     void SendVideo_Android()
     {
+        print("SendVideo_Android");
+
         streamSender = new StreamSender(null, senderImage, textureSize);
         streamSender.StartSendingStream();
     }
@@ -124,7 +126,7 @@ public class VideoSender : MonoBehaviour
             waveOutTestProcess.Kill();
     }
 
-    void Update()
+    void OnPreRender()
     {
         if (streamReceiver != null)
             streamReceiver.DrawFrame();

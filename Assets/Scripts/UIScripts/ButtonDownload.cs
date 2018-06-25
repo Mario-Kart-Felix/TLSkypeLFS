@@ -11,10 +11,14 @@ public class ButtonDownload : MonoBehaviour
 
 	public DownloadAssist downloadAssist;
 	public Button	buttonObject;
+
+	private GameManager gm;
 	WebClient client;
 
 	void Start ()
 	{
+		gm = GameManager.gmInstance;
+
 		client = new WebClient();
 		client.DownloadFileCompleted += new AsyncCompletedEventHandler(DownloadFileCompleted);
 	}
@@ -24,22 +28,24 @@ public class ButtonDownload : MonoBehaviour
 		print("Downloading");
         client.Credentials = new NetworkCredential("maxi", "asdfghjk");
 
-		string[] directorySplit = downloadAssist.fileAddresses[buttonObject.transform.GetSiblingIndex()].Split('/');
-		print(downloadAssist.fileAddresses[buttonObject.transform.GetSiblingIndex()]);
+		string[] directorySplit = downloadAssist.fileAddresses[buttonObject.transform.parent.GetSiblingIndex()].Split('/');
+		print(buttonObject.transform.parent.GetSiblingIndex());
+		print(downloadAssist.fileAddresses[buttonObject.transform.parent.GetSiblingIndex()]);
 
 		Uri downloadUri = new Uri(recievedFullName);
-        client.DownloadFileAsync(downloadUri, downloadAssist.fileAddresses[buttonObject.transform.GetSiblingIndex()]);
+        client.DownloadFileAsync(downloadUri, downloadAssist.fileAddresses[buttonObject.transform.parent.GetSiblingIndex()]);
 	}
 	
 	void DownloadFileCompleted (object sender, AsyncCompletedEventArgs e)
 	{
 		buttonObject.GetComponent<Image>().color = Color.green;
 		buttonObject.onClick.RemoveAllListeners();
-		buttonObject.onClick.AddListener(delegate{OpenFile(downloadAssist.fileAddresses[buttonObject.transform.GetSiblingIndex()]);});
+		buttonObject.onClick.AddListener(delegate{OpenFile(downloadAssist.fileAddresses[buttonObject.transform.parent.GetSiblingIndex()]);});
 	}
 
 	public void OpenFile (string fileAddress)
 	{
-		Application.OpenURL(fileAddress);
+		print(fileAddress);
+		gm.OpenFile(fileAddress);
 	}
 }

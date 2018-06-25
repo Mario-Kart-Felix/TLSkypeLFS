@@ -107,24 +107,18 @@ public class ButtonReplacer : MonoBehaviour
 	{
 		if(toggled)
 			gmInstance.allScreens.TurnScreen(3, true, true);
-		else
-			gmInstance.allScreens.TurnScreen(3, false);
 	}
 
 	public void SearchScreen ()
 	{
 		if(toggled)
 			gmInstance.allScreens.TurnScreen(2, true, true);
-		else
-			gmInstance.allScreens.TurnScreen(2, false);
 	}
 
 	public void CallExpertScreen()
 	{
 		if(toggled)
 			gmInstance.allScreens.TurnScreen(4, true, true);
-		else
-			gmInstance.allScreens.TurnScreen(4, false);
 	}
 
 	public void ButtonSet (bool setState)

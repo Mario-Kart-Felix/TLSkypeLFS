@@ -55,6 +55,8 @@ public class StreamSender
 
     public void StartSendingStream()
     {
+        Debug.Log("StartSendingStream");
+
         pattern = new byte[2];
         pattern[0] = 255;
         pattern[1] = 217;
@@ -67,6 +69,8 @@ public class StreamSender
 
     public void AndroidSendUpdate()
     {
+        Debug.Log("AndroidSendUpdate");
+
         AndroidJNI.AttachCurrentThread();
 
         IntPtr instancePtr = AndroidJNI.CallStaticObjectMethod(pluginClass.GetRawClass(), AndroidJNI.GetStaticMethodID(pluginClass.GetRawClass(), "instance",
@@ -96,7 +100,7 @@ public class StreamSender
 
             int index = SearchBytePatternAndroid();
 
-			// Debug.Log("NNN " + bytesRead + " " + index);
+            Debug.Log("NNN " + bytesRead + " " + index);
 
             if (index != -1)
             {
@@ -148,7 +152,6 @@ public class StreamSender
 
     public void DrawFrame()
     {
-        Debug.Log(data);
         if (data != null)
         {
             targetTexture.LoadImage(data);

@@ -155,7 +155,6 @@ public class SkypeManager : MonoBehaviour
         receivedFileFullName = fullFileName;
         string[] splitNames = fullFileName.Split(new char[] { '/' });
         receivedFileName = splitNames[splitNames.Length - 1];
-        receivedFileNameText.text = receivedFileName;
         receivedFileNameText.text = (Int32.Parse(receivedFileNameText.text) + 1).ToString();
 
         downloadAssist.SpawnDownload(receivedFileName, receivedFileFullName);
@@ -174,7 +173,7 @@ public class SkypeManager : MonoBehaviour
         mainCanvas.SetActive(true);
 
         videoSender.StartVideoSender();
-        // videoReceiver.StartVideoReceiver();
+        videoReceiver.StartVideoReceiver();
     }
 
     public void SendFile(string fullFileName)
